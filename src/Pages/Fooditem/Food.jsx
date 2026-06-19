@@ -1,12 +1,14 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FaStar, FaShoppingBag, FaSearch, FaSlidersH, FaUtensils, FaPizzaSlice, FaHamburger, FaBirthdayCake } from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
+import { FaStar, FaShoppingBag, FaSearch, FaSlidersH, FaUtensils, FaPizzaSlice, FaHamburger, FaBirthdayCake, FaEye } from "react-icons/fa";
 
 const Food = () => {
   const [menuItems, setMenuItems] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("default");
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetch("/Menu.json") 
@@ -85,14 +87,14 @@ const Food = () => {
                 <button
                   key={cat.name}
                   onClick={() => setSelectedCategory(cat.name)}
-                  className={`relative flex items-center gap-2 px-6 py-3 rounded-full font-black text-xs sm:text-sm transition-all duration-300 z-10 ${
+                  className={`relative flex items-center gap-2 px-6 py-3 cursor-pointer rounded-full font-black text-xs sm:text-sm transition-all duration-300 z-10 ${
                     isActive ? "text-white" : "text-gray-600 hover:text-gray-900"
                   }`}
                 >
                   {isActive && (
                     <motion.div
-                      layoutId="menuActiveTabRoundedTwo"
-                      className="absolute inset-0 bg-gradient-to-r from-orange-500 to-pink-500 rounded-full -z-10 shadow-lg shadow-orange-500/20"
+                      layoutId="menuActiveTabRoundedThree"
+                      className="absolute inset-0 bg-gradient-to-r cursor-pointer from-orange-500 to-pink-500 rounded-full -z-10 shadow-lg shadow-orange-500/20"
                       transition={{ type: "spring", stiffness: 300, damping: 28 }}
                     />
                   )}
@@ -129,31 +131,38 @@ const Food = () => {
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                transition={{ duration: 0.35 }}
-                className="bg-white border border-gray-100 rounded-[2rem] p-4 flex flex-col justify-between group hover:border-[#ff6b35]/20 transition-all duration-300"
+                whileHover={{ y: -12, rotate: 1 }}
+                transition={{ duration: 0.4, ease: [0.25, 1, 0.5, 1] }}
+                className="bg-white border border-gray-100 rounded-[2rem] p-4 flex flex-col justify-between group hover:border-orange-500/20 hover:shadow-2xl hover:shadow-orange-500/5 transition-all duration-300 cursor-pointer"
               >
                 <div className="relative w-full h-60 rounded-[1.5rem] overflow-hidden bg-gray-50">
                   <img
                     src={item.image}
                     alt={item.name}
-                    className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700 ease-out"
+                    className="w-full h-full object-cover transform group-hover:scale-110 group-hover:rotate-1 transition-transform duration-700 ease-out"
                     loading="lazy"
                   />
                   
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-5">
-                    <p className="text-white/90 text-xs font-semibold leading-relaxed line-clamp-3 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300 defer-100">
-                      {item.recipe || "Prepared with fresh, premium and authentic handpicked ingredients."}
-                    </p>
+                  {/* Hover Overlay with Navigate Button */}
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => navigate(`/food/${item._id || item.id}`)}
+                      className="flex items-center gap-2 bg-white/95 text-gray-900 font-black text-xs px-5 py-3 rounded-full shadow-lg border border-white hover:bg-orange-500 hover:text-white transition-colors duration-200 cursor-pointer"
+                    >
+                      <FaEye size={14} /> View Details
+                    </motion.button>
                   </div>
 
-                  <div className="absolute top-4 right-4 bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-full text-[11px] font-black text-gray-800 shadow-sm flex items-center gap-1">
-                    <FaStar className="text-amber-500" size={11} /> {item.rating || 4.8}
+                  <div className="absolute top-4 right-4 bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-full text-[11px] font-black text-gray-800 shadow-sm flex items-center gap-1 group-hover:bg-[#ff6b35] group-hover:text-white transition-colors duration-300">
+                    <FaStar className="text-amber-500 group-hover:text-white transition-colors duration-300" size={11} /> {item.rating || 4.8}
                   </div>
                 </div>
 
                 <div className="pt-5 px-1 flex-grow flex flex-col justify-between">
                   <div className="space-y-1.5">
-                    <span className="text-[10px] uppercase font-black text-[#ff6b35] tracking-widest block">
+                    <span className="text-[10px] uppercase font-black text-[#ff6b35] tracking-widest block transform group-hover:translate-x-1 transition-transform duration-300">
                       {item.category}
                     </span>
                     <h3 className="text-xl font-black text-gray-900 tracking-tight group-hover:text-[#ff6b35] transition-colors duration-200 line-clamp-1">
@@ -164,13 +173,16 @@ const Food = () => {
                   <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-50">
                     <div>
                       <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Price</p>
-                      <p className="text-2xl font-black text-gray-900 tracking-tight">${item.price}</p>
+                      <p className="text-2xl font-black text-gray-900 tracking-tight transform group-hover:scale-105 origin-left transition-transform duration-300">${item.price}</p>
                     </div>
 
                     <motion.button
-                      whileHover={{ scale: 1.03 }}
-                      whileTap={{ scale: 0.97 }}
-                      onClick={() => alert(`${item.name} added to cart!`)}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        alert(`${item.name} added to cart!`);
+                      }}
                       className="flex items-center gap-2 bg-gray-950 text-white font-black text-xs px-5 py-3.5 rounded-xl shadow-sm group-hover:bg-gradient-to-r group-hover:from-orange-500 group-hover:to-pink-500 transition-all duration-300"
                     >
                       <FaShoppingBag size={12} /> Buy Now
