@@ -1,4 +1,3 @@
-import Footer from "../../Shared/Footer";
 import Banner from "./Banner";
 import Categories from "./Categories";
 import Features from "./Features";
@@ -11,7 +10,7 @@ const Home = () => {
             <Categories/>
             <Features/>
             <Testimonials/>
-            <Footer/>
+         
         </div>
     );
 };
