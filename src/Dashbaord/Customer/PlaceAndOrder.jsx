@@ -1,21 +1,27 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import Swal from 'sweetalert2';
 import { 
   FaShoppingCart, FaPlus, FaMinus, FaTrash, FaCreditCard,
   FaMapMarkerAlt, FaPhone, FaUser, FaClock, FaCheckCircle,
-  FaPizzaSlice, FaHamburger, FaBirthdayCake, FaUtensils,
-  FaArrowRight, FaTag, FaPercent, FaTruck, FaStar, FaEye
+  FaUtensils, FaArrowRight, FaStar, FaEye
 } from 'react-icons/fa';
+import Useaxios from '../../Hooks/Useaxios';
+import useAuth from '../../Hooks/Useauth';
 
 const PlaceAndOrder = () => {
   const navigate = useNavigate();
+  const axiosPublic = Useaxios();
+  const { user } = useAuth();
+  
   const [foodItems, setFoodItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [cart, setCart] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("All");
-  const [showCart, setShowCart] = useState(false);
+  const [showCart, setShowCart] = useState(true);
   const [orderStep, setOrderStep] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [formData, setFormData] = useState({
     name: "",
@@ -25,81 +31,161 @@ const PlaceAndOrder = () => {
     paymentMethod: "cash"
   });
 
-  // Menu.json থেকে ডেটা লোড
+  const userEmail = user?.email;
+
   useEffect(() => {
-    fetch("/Menu.json")
-      .then((res) => {
-        if (!res.ok) throw new Error("Menu.json not found");
-        return res.json();
-      })
-      .then((data) => {
+    axiosPublic.get('/foods')
+      .then((response) => {
+        const data = response.data?.data || response.data || [];
         const formattedData = data.map(item => ({
           ...item,
-          category: item.category.charAt(0).toUpperCase() + item.category.slice(1),
-          rating: (4 + Math.random() * 0.9).toFixed(1),
-          prepTime: `${Math.floor(5 + Math.random() * 25)} mins`,
+          _id: item._id || item.id,
+          category: item.category ? item.category.charAt(0).toUpperCase() + item.category.slice(1) : "Unknown",
+          rating: item.rating || (4 + Math.random() * 0.9).toFixed(1),
+          prepTime: item.prepTime || `${Math.floor(5 + Math.random() * 25)} mins`,
           quantity: 0
         }));
         setFoodItems(formattedData);
         setLoading(false);
       })
       .catch(() => {
-        setFoodItems([
-          { _id: "1", name: "Classic Beef Burger", recipe: "Premium smashed beef patty with cheddar cheese.", image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=500", category: "Burger", price: 12.5, rating: 4.8, prepTime: "15 mins", quantity: 0 },
-          { _id: "2", name: "Margherita Pizza", recipe: "Fresh mozzarella, basil, and San Marzano tomato sauce.", image: "https://images.unsplash.com/photo-1604068549290-dea0e4a305ca?q=80&w=500", category: "Pizza", price: 10.9, rating: 4.9, prepTime: "20 mins", quantity: 0 },
-          { _id: "3", name: "Chocolate Fudge Cake", recipe: "Decadent Belgian chocolate with fudge ganache.", image: "https://images.unsplash.com/photo-1578985545062-69928b1d9587?q=80&w=500", category: "Cake", price: 8.0, rating: 4.7, prepTime: "10 mins", quantity: 0 }
-        ]);
+        setFoodItems([]);
         setLoading(false);
       });
   }, []);
 
-  const categories = ["All", "Burger", "Pizza", "Cake", "Sides"];
+  useEffect(() => {
+    if (userEmail) {
+      axiosPublic.get(`/cart/${userEmail}`)
+        .then((response) => {
+          const cartData = response.data?.data;
+          if (cartData && cartData.items && cartData.items.length > 0) {
+            setCart(cartData.items);
+          }
+        })
+        .catch((err) => console.error("Error loading cart:", err));
+    }
+  }, [userEmail]);
 
-  const filteredItems = foodItems.filter(item => {
-    return selectedCategory === "All" || item.category === selectedCategory;
-  });
+  const saveCartToDB = async (updatedCart) => {
+    if (!userEmail) return;
+    try {
+      await axiosPublic.post('/cart', {
+        email: userEmail,
+        items: updatedCart
+      });
+    } catch (error) {
+      console.error("Error saving cart:", error);
+    }
+  };
 
   const addToCart = (item) => {
     setCart(prev => {
       const existing = prev.find(i => i._id === item._id);
+      let updatedCart;
       if (existing) {
-        return prev.map(i => 
+        updatedCart = prev.map(i => 
           i._id === item._id ? { ...i, quantity: i.quantity + 1 } : i
         );
+      } else {
+        updatedCart = [...prev, { ...item, quantity: 1 }];
       }
-      return [...prev, { ...item, quantity: 1 }];
+      saveCartToDB(updatedCart);
+      
+      Swal.fire({
+        icon: 'success',
+        title: 'Added to Cart!',
+        text: `${item.name} added to your cart.`,
+        timer: 1500,
+        showConfirmButton: false
+      });
+      
+      return updatedCart;
     });
   };
 
   const removeFromCart = (itemId) => {
     setCart(prev => {
       const existing = prev.find(i => i._id === itemId);
+      let updatedCart;
       if (existing && existing.quantity > 1) {
-        return prev.map(i => 
+        updatedCart = prev.map(i => 
           i._id === itemId ? { ...i, quantity: i.quantity - 1 } : i
         );
+      } else {
+        updatedCart = prev.filter(i => i._id !== itemId);
       }
-      return prev.filter(i => i._id !== itemId);
+      saveCartToDB(updatedCart);
+      return updatedCart;
     });
   };
 
   const deleteFromCart = (itemId) => {
-    setCart(prev => prev.filter(i => i._id !== itemId));
+    setCart(prev => {
+      const updatedCart = prev.filter(i => i._id !== itemId);
+      saveCartToDB(updatedCart);
+      return updatedCart;
+    });
   };
 
   const cartTotal = cart.reduce((total, item) => total + (item.price * item.quantity), 0);
   const cartItemsCount = cart.reduce((total, item) => total + item.quantity, 0);
 
-  const placeOrder = () => {
+  const placeOrder = async () => {
     if (cart.length === 0) {
-      alert("Please add items to your cart first!");
+      Swal.fire({
+        icon: 'warning',
+        title: 'Cart is Empty!',
+        text: 'Please add items to your cart first.',
+        confirmButtonColor: '#FF6B35'
+      });
       return;
     }
     if (!formData.name || !formData.phone || !formData.address) {
-      alert("Please fill in all required fields!");
+      Swal.fire({
+        icon: 'warning',
+        title: 'Missing Fields!',
+        text: 'Please fill in all required fields.',
+        confirmButtonColor: '#FF6B35'
+      });
       return;
     }
-    setOrderStep(3);
+
+    setIsSubmitting(true);
+
+    try {
+      const orderData = {
+        email: userEmail,
+        customerName: formData.name,
+        phone: formData.phone,
+        address: formData.address,
+        deliveryNote: formData.deliveryNote,
+        paymentMethod: formData.paymentMethod,
+        items: cart,
+        subtotal: cartTotal,
+        deliveryFee: 2.00,
+        total: cartTotal + 2,
+        status: "Pending",
+        createdAt: new Date().toISOString()
+      };
+
+      const response = await axiosPublic.post('/orders', orderData);
+      console.log("Order response:", response.data);
+
+      if (response.data.success) {
+        setOrderStep(3);
+      }
+    } catch (error) {
+      console.error("Error placing order:", error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Order Failed!',
+        text: 'Something went wrong. Please try again.',
+        confirmButtonColor: '#FF6B35'
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const resetOrder = () => {
@@ -114,6 +200,11 @@ const PlaceAndOrder = () => {
     });
   };
 
+  const categories = ["All", "Burger", "Pizza", "Cake", "Sides"];
+  const filteredItems = foodItems.filter(item => {
+    return selectedCategory === "All" || (item.category && item.category === selectedCategory);
+  });
+
   const PLACEHOLDER = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='500' height='400' viewBox='0 0 500 400'%3E%3Crect width='500' height='400' fill='%23f3f4f6'/%3E%3Ctext x='250' y='190' font-family='Arial' font-size='20' fill='%239ca3af' text-anchor='middle'%3E🍽️ Food%3C/text%3E%3Ctext x='250' y='220' font-family='Arial' font-size='14' fill='%23d1d5db' text-anchor='middle'%3ENo Image%3C/text%3E%3C/svg%3E";
 
   const handleImageError = (e) => {
@@ -121,7 +212,6 @@ const PlaceAndOrder = () => {
     e.target.onerror = null;
   };
 
-  // ✅ View Details - FoodDetails পেজে নেভিগেট
   const handleViewDetails = (itemId) => {
     navigate(`/food/${itemId}`);
   };
@@ -196,7 +286,6 @@ const PlaceAndOrder = () => {
   return (
     <div className="w-full min-h-full container mx-auto relative">
       
-      {/* ===== হেডার ===== */}
       <div className="flex items-center justify-between pb-6 border-b border-gray-100">
         <div>
           <h1 className="text-2xl font-black text-gray-900 flex items-center gap-2">
@@ -222,13 +311,10 @@ const PlaceAndOrder = () => {
         </button>
       </div>
 
-      {/* ===== মেইন কন্টেন্ট ===== */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 pt-6">
         
-        {/* ===== ফুড গ্রিড (3 কলাম) ===== */}
-        <div className="lg:col-span-3 space-y-6">
+        <div className="lg:col-span-5 space-y-6">
           
-          {/* ক্যাটাগরি ফিল্টার */}
           <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
             {categories.map((cat) => (
               <button
@@ -248,17 +334,15 @@ const PlaceAndOrder = () => {
             ))}
           </div>
 
-          {/* ফুড গ্রিড */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
             {filteredItems.map((item) => (
               <motion.div
-                key={item._id}
+                key={item._id || item.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="bg-white rounded-2xl border border-gray-100 p-3 shadow-sm hover:shadow-md transition-all group"
               >
                 <div className="flex gap-3">
-                  {/* ইমেজ */}
                   <div 
                     className="w-24 h-24 rounded-xl overflow-hidden flex-shrink-0 bg-gray-50 cursor-pointer"
                     onClick={() => handleViewDetails(item._id)}
@@ -272,7 +356,6 @@ const PlaceAndOrder = () => {
                     />
                   </div>
                   
-                  {/* ডিটেইলস */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
                       <span className="text-[9px] font-black text-gray-400 uppercase">
@@ -286,11 +369,9 @@ const PlaceAndOrder = () => {
                     <h3 className="text-sm font-black text-gray-900 truncate">{item.name}</h3>
                     <p className="text-[10px] text-gray-400 line-clamp-1">{item.recipe}</p>
                     <div className="flex items-center justify-between mt-1.5">
-                      <span className="text-sm font-black text-[#FF6B35]">${item.price.toFixed(2)}</span>
+                      <span className="text-sm font-black text-[#FF6B35]">${(item.price || 0).toFixed(2)}</span>
                       
-                      {/* ✅ অ্যাকশন বাটন গ্রুপ */}
                       <div className="flex items-center gap-1">
-                        {/* 👁️ View Details Button */}
                         <motion.button
                           whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.9 }}
@@ -301,12 +382,11 @@ const PlaceAndOrder = () => {
                           <FaEye size={10} /> View
                         </motion.button>
                         
-                        {/* 🛒 Add to Cart Button */}
                         <motion.button
                           whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.9 }}
                           onClick={() => addToCart(item)}
-                          className="px-2.5 py-1 rounded-lg bg-gray-900 hover:bg-[#FF6B35] text-white text-[10px] font-bold transition-all flex items-center gap-1"
+                          className="px-2.5 py-1 rounded-lg bg-[#FF6B35] hover:bg-orange-600 text-white text-[10px] font-bold transition-all flex items-center gap-1"
                         >
                           <FaPlus size={8} /> Add
                         </motion.button>
@@ -325,109 +405,8 @@ const PlaceAndOrder = () => {
             </div>
           )}
         </div>
-
-        {/* ===== কার্ট সাইডবার (2 কলাম) ===== */}
-        <div className={`lg:col-span-2 ${showCart ? 'block' : 'hidden lg:block'}`}>
-          <div className="sticky top-4 bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
-            <h3 className="text-sm font-black text-gray-900 flex items-center gap-2">
-              <FaShoppingCart className="text-[#FF6B35]" />
-              Your Cart
-              {cartItemsCount > 0 && (
-                <span className="text-xs font-bold text-gray-400">({cartItemsCount} items)</span>
-              )}
-            </h3>
-
-            {/* কার্ট আইটেম */}
-            <div className="mt-4 max-h-[300px] overflow-y-auto space-y-2">
-              {cart.length === 0 ? (
-                <div className="text-center py-8">
-                  <span className="text-3xl">🛒</span>
-                  <p className="text-xs text-gray-400 mt-2">Your cart is empty</p>
-                  <p className="text-[10px] text-gray-300">Add some delicious items!</p>
-                </div>
-              ) : (
-                cart.map((item) => (
-                  <motion.div
-                    key={item._id}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className="flex items-center gap-3 p-2 bg-gray-50 rounded-xl"
-                  >
-                    <div 
-                      className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 cursor-pointer"
-                      onClick={() => handleViewDetails(item._id)}
-                    >
-                      <img
-                        src={item.image}
-                        alt={item.name}
-                        className="w-full h-full object-cover"
-                        onError={handleImageError}
-                        loading="lazy"
-                      />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="text-xs font-bold text-gray-800 truncate">{item.name}</h4>
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => removeFromCart(item._id)}
-                          className="w-5 h-5 rounded bg-gray-200 hover:bg-gray-300 text-gray-600 text-[10px] flex items-center justify-center transition-colors"
-                        >
-                          <FaMinus size={8} />
-                        </button>
-                        <span className="text-xs font-black text-gray-800">{item.quantity}</span>
-                        <button
-                          onClick={() => addToCart(item)}
-                          className="w-5 h-5 rounded bg-[#FF6B35] hover:bg-orange-600 text-white text-[10px] flex items-center justify-center transition-colors"
-                        >
-                          <FaPlus size={8} />
-                        </button>
-                        <span className="text-xs font-black text-[#FF6B35] ml-auto">
-                          ${(item.price * item.quantity).toFixed(2)}
-                        </span>
-                        <button
-                          onClick={() => deleteFromCart(item._id)}
-                          className="text-gray-400 hover:text-red-500 transition-colors"
-                        >
-                          <FaTrash size={12} />
-                        </button>
-                      </div>
-                    </div>
-                  </motion.div>
-                ))
-              )}
-            </div>
-
-            {/* কার্ট টোটাল */}
-            {cart.length > 0 && (
-              <>
-                <div className="mt-4 pt-4 border-t border-gray-100 space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-400">Subtotal</span>
-                    <span className="font-bold text-gray-900">${cartTotal.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-400">Delivery Fee</span>
-                    <span className="font-bold text-gray-900">$2.00</span>
-                  </div>
-                  <div className="flex justify-between text-lg font-black text-[#FF6B35] pt-2 border-t border-gray-100">
-                    <span>Total</span>
-                    <span>${(cartTotal + 2).toFixed(2)}</span>
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => setOrderStep(2)}
-                  className="w-full mt-4 py-3 bg-gradient-to-r from-[#FF6B35] to-orange-500 text-white font-black text-sm rounded-xl shadow-lg shadow-orange-500/20 hover:shadow-xl transition-all flex items-center justify-center gap-2"
-                >
-                  Proceed to Checkout <FaArrowRight size={14} />
-                </button>
-              </>
-            )}
-          </div>
-        </div>
       </div>
 
-      {/* ===== চেকআউট মোডাল (স্টেপ 2) ===== */}
       <AnimatePresence>
         {orderStep === 2 && (
           <>
@@ -458,9 +437,9 @@ const PlaceAndOrder = () => {
                 <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Order Summary</p>
                 <div className="mt-2 space-y-1">
                   {cart.map((item) => (
-                    <div key={item._id} className="flex justify-between text-sm">
+                    <div key={item._id || item.id} className="flex justify-between text-sm">
                       <span className="text-gray-600">{item.name} × {item.quantity}</span>
-                      <span className="font-bold text-gray-900">${(item.price * item.quantity).toFixed(2)}</span>
+                      <span className="font-bold text-gray-900">${((item.price || 0) * item.quantity).toFixed(2)}</span>
                     </div>
                   ))}
                   <div className="flex justify-between text-sm border-t border-gray-200 pt-2 mt-2">
@@ -564,9 +543,16 @@ const PlaceAndOrder = () => {
                 </button>
                 <button
                   onClick={placeOrder}
-                  className="flex-1 py-3 rounded-xl bg-gradient-to-r from-[#FF6B35] to-orange-500 text-white font-bold text-sm shadow-lg shadow-orange-500/20 hover:shadow-xl transition-all flex items-center justify-center gap-2"
+                  disabled={isSubmitting}
+                  className="flex-1 py-3 rounded-xl bg-gradient-to-r from-[#FF6B35] to-orange-500 text-white font-bold text-sm shadow-lg shadow-orange-500/20 hover:shadow-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                 >
-                  <FaCheckCircle size={16} /> Place Order
+                  {isSubmitting ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      <FaCheckCircle size={16} /> Place Order
+                    </>
+                  )}
                 </button>
               </div>
             </motion.div>

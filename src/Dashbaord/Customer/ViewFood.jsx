@@ -1,58 +1,52 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { 
   FaSearch, FaRegClock, FaStar, FaEye, FaShoppingBag, 
   FaTimes, FaFire, FaUtensils
 } from 'react-icons/fa';
-
+import Useaxios from '../../Hooks/Useaxios';
 
 const PLACEHOLDER_IMAGE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='500' height='400' viewBox='0 0 500 400'%3E%3Crect width='500' height='400' fill='%23f3f4f6'/%3E%3Ctext x='250' y='190' font-family='Arial' font-size='20' fill='%239ca3af' text-anchor='middle'%3E🍽️ Food Image%3C/text%3E%3Ctext x='250' y='220' font-family='Arial' font-size='14' fill='%23d1d5db' text-anchor='middle'%3ENo Image Available%3C/text%3E%3C/svg%3E";
 
 const ViewFood = () => {
+  const navigate = useNavigate();
+  const axiosPublic = Useaxios();
   const [foodItems, setFoodItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState("All Flavors");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFood, setSelectedFood] = useState(null);
 
+  // ✅ API থেকে ডাটা লোড
   useEffect(() => {
-    console.log("🔄 Fetching Menu.json...");
+    console.log("🔄 Fetching foods from API...");
     
-    fetch("/Menu.json")
-      .then((res) => {
-        console.log("📡 Response status:", res.status);
-        if (!res.ok) {
-          throw new Error(`HTTP ${res.status} - ${res.statusText}`);
-        }
-        return res.json();
-      })
-      .then((data) => {
-        console.log("✅ Menu.json loaded successfully:", data.length, "items");
+    axiosPublic.get('/foods')
+      .then((response) => {
+        console.log("✅ API Response:", response.data);
+        
+        const data = response.data?.data || response.data || [];
         
         const formattedData = data.map(item => ({
           ...item,
-          category: item.category.charAt(0).toUpperCase() + item.category.slice(1),
-          rating: (4 + Math.random() * 0.9).toFixed(1),
-          prepTime: `${Math.floor(5 + Math.random() * 25)} mins`,
-          calories: `${Math.floor(200 + Math.random() * 600)} kcal`,
-          tags: item.category === "burger" ? ["Best Seller", "Spicy"] :
+          _id: item._id || item.id,
+          category: item.category ? item.category.charAt(0).toUpperCase() + item.category.slice(1) : "Unknown",
+          rating: item.rating || (4 + Math.random() * 0.9).toFixed(1),
+          prepTime: item.prepTime || `${Math.floor(5 + Math.random() * 25)} mins`,
+          calories: item.calories || `${Math.floor(200 + Math.random() * 600)} kcal`,
+          tags: item.tags || (item.category === "burger" ? ["Best Seller", "Spicy"] :
                  item.category === "pizza" ? ["Trending", "Cheesy"] :
                  item.category === "cake" ? ["Sweet Tooth", "Dessert"] :
-                 ["Healthy", "Fresh"]
+                 ["Healthy", "Fresh"])
         }));
         
         setFoodItems(formattedData);
         setLoading(false);
       })
       .catch((err) => {
-        console.error("❌ Error loading Menu.json:", err);
-        
-        // Fallback ডেটা
-        setFoodItems([
-          { _id: "1", name: "Classic Beef Burger", recipe: "Premium smashed beef patty, aged cheddar cheese, secret house sauce.", image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=500", category: "Burger", price: 12.5, rating: 4.8, prepTime: "15 mins", calories: "540 kcal", tags: ["Best Seller", "Spicy"] },
-          { _id: "2", name: "Margherita Pizza", recipe: "Hand-tossed sourdough, rich San Marzano tomato sauce, fresh mozzarella.", image: "https://images.unsplash.com/photo-1604068549290-dea0e4a305ca?q=80&w=500", category: "Pizza", price: 10.9, rating: 4.9, prepTime: "20 mins", calories: "820 kcal", tags: ["Trending"] },
-          { _id: "3", name: "Chocolate Fudge Cake", recipe: "Decadent Belgian chocolate sponge, rich fudge ganache glaze.", image: "https://images.unsplash.com/photo-1578985545062-69928b1d9587?q=80&w=500", category: "Cake", price: 8.0, rating: 4.7, prepTime: "10 mins", calories: "410 kcal", tags: ["Sweet Tooth"] }
-        ]);
+        console.error("❌ Error loading foods:", err);
+        setFoodItems([]);
         setLoading(false);
       });
   }, []);
@@ -60,21 +54,25 @@ const ViewFood = () => {
   const categories = [
     "All Flavors",
     ...new Set(foodItems.map(item => 
-      item.category.charAt(0).toUpperCase() + item.category.slice(1)
-    ))
+      item.category ? item.category.charAt(0).toUpperCase() + item.category.slice(1) : ""
+    ).filter(Boolean))
   ];
 
   const filteredItems = foodItems.filter(item => {
     const matchesCategory = selectedCategory === "All Flavors" || 
-      item.category.toLowerCase() === selectedCategory.toLowerCase();
-    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
+      (item.category && item.category.toLowerCase() === selectedCategory.toLowerCase());
+    const matchesSearch = item.name && item.name.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
   });
 
-  // ✅ ইমেজ Error হ্যান্ডলিং
   const handleImageError = (e) => {
     e.target.src = PLACEHOLDER_IMAGE;
-    e.target.onerror = null; // ইনফিনিট লুপ বন্ধ করতে
+    e.target.onerror = null;
+  };
+
+  // ✅ Place Order পেজে নেভিগেট
+  const goToPlaceOrder = () => {
+    navigate('/dashboard/place-order');
   };
 
   if (loading) {
@@ -103,15 +101,25 @@ const ViewFood = () => {
             </p>
           </div>
 
-          <div className="relative w-full md:w-72">
-            <input
-              type="text"
-              placeholder="What are you craving today?..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-11 pl-11 pr-4 bg-white border border-gray-100 rounded-2xl text-xs font-bold text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/20 focus:border-[#FF6B35] transition-all shadow-sm"
-            />
-            <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={13} />
+          <div className="flex items-center gap-3">
+            <div className="relative w-full md:w-72">
+              <input
+                type="text"
+                placeholder="What are you craving today?..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full h-11 pl-11 pr-4 bg-white border border-gray-100 rounded-2xl text-xs font-bold text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/20 focus:border-[#FF6B35] transition-all shadow-sm"
+              />
+              <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={13} />
+            </div>
+            
+            {/* ✅ Place Order বাটন */}
+            <button
+              onClick={goToPlaceOrder}
+              className="px-4 py-2.5 bg-[#FF6B35] text-white rounded-xl font-bold text-sm hover:bg-orange-600 transition-all flex items-center gap-2 shadow-lg shadow-orange-500/20 whitespace-nowrap"
+            >
+              <FaShoppingBag size={14} /> Place Order
+            </button>
           </div>
         </div>
 
@@ -143,7 +151,7 @@ const ViewFood = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
             {filteredItems.map((item) => (
               <div
-                key={item._id}
+                key={item._id || item.id}
                 className="bg-white rounded-3xl border border-gray-100 p-4 shadow-sm hover:shadow-md transition-all flex flex-col justify-between group"
               >
                 <div>
@@ -157,7 +165,7 @@ const ViewFood = () => {
                     />
                     
                     <div className="absolute top-3 left-3 flex flex-wrap gap-1">
-                      {item.tags && item.tags.map((tag, i) => (
+                      {item.tags && item.tags.slice(0, 2).map((tag, i) => (
                         <span key={i} className="px-2 py-0.5 bg-black/60 backdrop-blur-md text-white text-[8px] font-black uppercase rounded-md tracking-wider">
                           {tag}
                         </span>
@@ -184,7 +192,7 @@ const ViewFood = () => {
                 <div className="flex items-center justify-between mt-5 pt-3.5 border-t border-gray-50">
                   <div>
                     <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">Price</p>
-                    <h4 className="text-base font-black text-[#2D3436]">${item.price.toFixed(2)}</h4>
+                    <h4 className="text-base font-black text-[#2D3436]">${(item.price || 0).toFixed(2)}</h4>
                   </div>
 
                   <div className="flex items-center gap-1.5">
@@ -196,8 +204,12 @@ const ViewFood = () => {
                       <FaEye size={12} />
                     </button>
                     
-                    <button className="h-9 px-4 rounded-xl bg-gray-900 hover:bg-[#FF6B35] text-white flex items-center gap-1.5 text-xs font-black shadow-sm transition-all cursor-pointer">
-                      <FaShoppingBag size={10} /> Add
+                    {/* ✅ Place Order বাটন */}
+                    <button
+                      onClick={goToPlaceOrder}
+                      className="h-9 px-4 rounded-xl bg-[#FF6B35] hover:bg-orange-600 text-white flex items-center gap-1.5 text-xs font-black shadow-sm transition-all cursor-pointer"
+                    >
+                      <FaShoppingBag size={10} /> Order Now
                     </button>
                   </div>
                 </div>
@@ -287,16 +299,16 @@ const ViewFood = () => {
               <div className="pt-4 border-t border-gray-100 mt-6 flex items-center justify-between">
                 <div>
                   <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Total Price</p>
-                  <h3 className="text-xl font-black text-gray-900">${selectedFood.price.toFixed(2)}</h3>
+                  <h3 className="text-xl font-black text-gray-900">${(selectedFood.price || 0).toFixed(2)}</h3>
                 </div>
                 <button 
                   onClick={() => {
-                    alert(`${selectedFood.name} added to cart!`);
                     setSelectedFood(null);
+                    goToPlaceOrder();
                   }}
                   className="h-11 px-6 rounded-xl bg-[#FF6B35] hover:bg-orange-600 text-white font-black text-xs flex items-center gap-2 shadow-lg shadow-orange-500/10 transition-all cursor-pointer"
                 >
-                  <FaShoppingBag size={11} /> Confirm & Order
+                  <FaShoppingBag size={11} /> Order Now
                 </button>
               </div>
 

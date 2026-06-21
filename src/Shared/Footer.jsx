@@ -13,9 +13,9 @@ const Footer = () => {
   ];
 
   return (
-    <footer className="bg-white border-t border-gray-100 px-4 sm:px-6 lg:px-8 pt-20 pb-8 relative overflow-hidden">
+    <footer className="bg-white container mx-auto border-t border-gray-100 px-4 sm:px-6 lg:px-8 pt-20 pb-8 relative overflow-hidden">
       
-      <div className="max-w-7xl mx-auto">
+      <div className="container mx-auto">
         
     
 

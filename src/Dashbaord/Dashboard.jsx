@@ -1,77 +1,150 @@
 // src/Dashboard/Dashboard.jsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   FaUser, FaUserShield, FaPizzaSlice, FaShoppingCart, FaCreditCard, 
   FaCheckCircle, FaClipboardList, FaUsers, FaTasks, FaUtensils,
-  FaBars, FaChevronLeft, FaBell, FaArrowUp, FaArrowDown, FaEye
+  FaBars, FaChevronLeft, FaBell
 } from "react-icons/fa";
 import ViewFood from "./Customer/ViewFood";
 import PlaceAndOrder from "./Customer/PlaceAndOrder";
 import OrderList from "./Customer/OrderList";
+import ViewAlOrders from "./Admin/ViewAlOrders";
+import CustomerDetails from "./Admin/CustomerDetails";
+import ViewPaymentStatus from "./Admin/ViewPaymentStatus";
+import ManageFood from "./Admin/ManageFood";
+import Useaxios from "../Hooks/Useaxios";
+import useAuth from "../hooks/useAuth";
+import AddFoodModal from "./Admin/AddFoodModal";
 
 const Dashboard = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const axiosPublic = Useaxios();
+  const { user } = useAuth();
+  
+  const [userRole, setUserRole] = useState("Customer");
+  const [isRoleLoading, setIsRoleLoading] = useState(true);
   const [activeRoute, setActiveRoute] = useState("view-food");
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
-  // ডাইনামিক ডেটা
-  const statsData = [
-    { id: 1, title: "Total Revenue", value: "$12,845", change: "+12.5%", isPositive: true, emoji: "💰" },
-    { id: 2, title: "Total Orders", value: "1,284", change: "+8.2%", isPositive: true, emoji: "🛒" },
-    { id: 3, title: "Total Customers", value: "4,567", change: "+15.3%", isPositive: true, emoji: "👥" },
-    { id: 4, title: "Avg. Order Value", value: "$42.50", change: "-2.1%", isPositive: false, emoji: "📈" }
-  ];
+  // ✅ ইউজারের ইমেইল dynamically নিন
+  const userEmail = user?.email;
 
-  const recentOrdersData = [
-    { id: "#ORD-001", customer: "John Doe", items: "Classic Burger x2", total: "$25.80", status: "Delivered", time: "10 min ago" },
-    { id: "#ORD-002", customer: "Jane Smith", items: "Margherita Pizza x1", total: "$18.50", status: "Preparing", time: "25 min ago" },
-    { id: "#ORD-003", customer: "Mike Johnson", items: "Chocolate Cake x3", total: "$32.40", status: "On the way", time: "45 min ago" },
-    { id: "#ORD-004", customer: "Sarah Wilson", items: "BBQ Burger x2", total: "$28.90", status: "Delivered", time: "1 hour ago" },
-    { id: "#ORD-005", customer: "David Brown", items: "Pepperoni Pizza x1", total: "$22.30", status: "Cancelled", time: "2 hours ago" }
-  ];
-
-  const topSellingData = [
-    { name: "Classic Beef Burger", sales: 245, revenue: "$3,185", trend: "up", image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=100" },
-    { name: "Margherita Pizza", sales: 210, revenue: "$2,730", trend: "up", image: "https://images.unsplash.com/photo-1604068549290-dea0e4a305ca?w=100" },
-    { name: "Chocolate Fudge Cake", sales: 180, revenue: "$2,340", trend: "down", image: "https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=100" },
-    { name: "Double Cheese Burger", sales: 160, revenue: "$2,080", trend: "up", image: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=100" }
-  ];
-
-  const menuGroups = [
-    {
-      title: "Customer Console",
-      role: "Customer",
-      items: [
-        { id: "auth-simulation", label: "Register / Login", icon: <FaUser /> },
-        { id: "view-food", label: "View Food Items", icon: <FaUtensils /> },
-        { id: "place-order", label: "Place an Order", icon: <FaShoppingCart /> },
-        { id: "make-payment", label: "PayHere Sandbox", icon: <FaCreditCard /> },
-        { id: "order-list", label: "Order Confirmation", icon: <FaCheckCircle /> },
-      ]
-    },
-    {
-      title: "Admin Management",
-      role: "Admin",
-      items: [
-        { id: "admin-login", label: "Admin Control Gate", icon: <FaUserShield /> },
-        { id: "view-all-orders", label: "View All Orders", icon: <FaClipboardList /> },
-        { id: "view-customer-details", label: "Customer Details", icon: <FaUsers /> },
-        { id: "view-payment-status", label: "Payment Status", icon: <FaCreditCard /> },
-        { id: "manage-food-items", label: "Manage Food Catalog", icon: <FaPizzaSlice /> },
-        { id: "update-order-status", label: "Update Order Status", icon: <FaTasks /> },
-      ]
+  // ✅ API থেকে ইউজার রোল লোড
+  useEffect(() => {
+    if (userEmail) {
+      setIsRoleLoading(true);
+      axiosPublic.get(`/users/email/${userEmail}`)
+        .then(res => {
+          console.log("📡 ইউজার ডাটা:", res.data);
+          
+          const userData = res.data?.data || res.data;
+          const role = userData?.role;
+          
+          if (role) {
+            const normalizedRole = role.charAt(0).toUpperCase() + role.slice(1).toLowerCase();
+            setUserRole(normalizedRole);
+            console.log("✅ সেট করা রোল:", normalizedRole);
+          } else {
+            setUserRole("Customer");
+          }
+          setIsRoleLoading(false);
+        })
+        .catch((err) => {
+          console.error("❌ Error fetching role:", err);
+          setUserRole("Customer");
+          setIsRoleLoading(false);
+        });
+    } else {
+      setUserRole("Customer");
+      setIsRoleLoading(false);
     }
-  ];
+  }, [userEmail, axiosPublic]);
 
-  const getStatusColor = (status) => {
-    const colors = {
-      "Delivered": "bg-green-50 text-green-600 border-green-100",
-      "Preparing": "bg-amber-50 text-amber-600 border-amber-100",
-      "On the way": "bg-blue-50 text-blue-600 border-blue-100",
-      "Cancelled": "bg-rose-50 text-rose-600 border-rose-100",
-    };
-    return colors[status] || "bg-gray-50 text-gray-600 border-gray-100";
+  // ✅ URL থেকে activeRoute সেট করুন
+  useEffect(() => {
+    const path = location.pathname;
+    const route = path.split("/dashboard/")[1] || "view-food";
+    setActiveRoute(route);
+  }, [location.pathname]);
+
+  const handleRouteChange = (routeId) => {
+    const isAdminRoute = ["all-orders", "customer-details", "view-payment-status", "manage-food", "add-food"].includes(routeId);
+    
+    if (isAdminRoute && userRole?.toLowerCase() !== "admin") {
+      setActiveRoute("view-food");
+      navigate("/dashboard/view-food", { replace: true });
+      return;
+    }
+
+    setActiveRoute(routeId);
+    navigate(`/dashboard/${routeId}`, { replace: true });
   };
+
+  // ============================================
+  // ✅ শুধুমাত্র ইউজারের রোল অনুযায়ী মেনু দেখান
+  // ============================================
+  const isAdmin = userRole?.toLowerCase() === "admin";
+
+  // ✅ Admin হলে শুধু Admin মেনু, Customer হলে শুধু Customer মেনু
+  const getMenuGroups = () => {
+    if (isAdmin) {
+      return [
+        {
+          title: "Admin Management",
+          role: "Admin",
+          items: [
+            { id: "all-orders", label: "View All Orders", icon: <FaClipboardList /> },
+            { id: "customer-details", label: "Customer Details", icon: <FaUsers /> },
+            { id: "view-payment-status", label: "Payment Status", icon: <FaCreditCard /> },
+            { id: "manage-food", label: "Manage Food Catalog", icon: <FaPizzaSlice /> },
+          ]
+        }
+      ];
+    } else {
+      return [
+        {
+          title: "Customer Console",
+          role: "Customer",
+          items: [
+            { id: "view-food", label: "View Food Items", icon: <FaUtensils /> },
+            { id: "place-order", label: "Place an Order", icon: <FaShoppingCart /> },
+            { id: "make-payment", label: "PayHere Sandbox", icon: <FaCreditCard /> },
+            { id: "order-list", label: "My Orders", icon: <FaCheckCircle /> },
+          ]
+        }
+      ];
+    }
+  };
+
+  const menuGroups = getMenuGroups();
+
+  // ✅ ডিফল্ট রাউট সেট করুন
+  useEffect(() => {
+    if (!isRoleLoading && menuGroups.length > 0) {
+      const firstItem = menuGroups[0]?.items[0]?.id;
+      if (firstItem && activeRoute !== firstItem) {
+        const isCurrentRouteValid = menuGroups.some(group => 
+          group.items.some(item => item.id === activeRoute)
+        );
+        if (!isCurrentRouteValid) {
+          setActiveRoute(firstItem);
+          navigate(`/dashboard/${firstItem}`, { replace: true });
+        }
+      }
+    }
+  }, [isRoleLoading, menuGroups, activeRoute, navigate]);
+
+  if (isRoleLoading) {
+    return (
+      <div className="w-screen h-screen flex flex-col items-center justify-center bg-[#FAFAFB]">
+        <div className="w-10 h-10 border-4 border-[#FF6B35] border-t-transparent rounded-full animate-spin mb-4" />
+        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Loading Dashboard...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="w-screen h-screen bg-[#FAFAFB] text-[#2D3436] font-sans flex overflow-hidden fixed inset-0 select-none">
@@ -83,7 +156,6 @@ const Dashboard = () => {
         className="h-full bg-white border-r border-gray-100 flex flex-col justify-between shrink-0 z-30 relative shadow-sm"
       >
         <div>
-          {/* Header & Requested Logo */}
           <div className="h-20 px-6 border-b border-gray-50 flex items-center justify-between overflow-hidden">
             <AnimatePresence mode="wait">
               {isSidebarOpen ? (
@@ -91,7 +163,8 @@ const Dashboard = () => {
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -10 }}
-                  className="flex items-center space-x-2"
+                  className="flex items-center space-x-2 cursor-pointer"
+                  onClick={() => navigate("/dashboard")}
                 >
                   <span className="text-2xl font-black text-[#FF6B35] tracking-tight">🍕 Food</span>
                   <span className="text-2xl font-black text-gray-700 tracking-tight">Hub</span>
@@ -102,6 +175,7 @@ const Dashboard = () => {
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.6 }}
                   className="text-2xl mx-auto cursor-pointer"
+                  onClick={() => navigate("/dashboard")}
                 >
                   🍕
                 </motion.div>
@@ -109,7 +183,6 @@ const Dashboard = () => {
             </AnimatePresence>
           </div>
 
-          {/* Navigation Items */}
           <div className="p-4 space-y-7 overflow-y-auto overflow-x-hidden max-h-[calc(100vh-160px)] scrollbar-none">
             {menuGroups.map((group, gIdx) => (
               <div key={gIdx} className="space-y-1">
@@ -128,14 +201,13 @@ const Dashboard = () => {
                     return (
                       <button
                         key={item.id}
-                        onClick={() => setActiveRoute(item.id)}
+                        onClick={() => handleRouteChange(item.id)}
                         className={`w-full flex items-center gap-3.5 px-3.5 h-11 rounded-xl text-xs font-bold transition-all relative group cursor-pointer ${
                           isActive 
                             ? "text-[#FF6B35] bg-orange-50/70 font-extrabold"
                             : "text-gray-500 hover:bg-gray-50 hover:text-gray-800"
                         }`}
                       >
-                        {/* Smooth Sliding Pill Indicator */}
                         {isActive && (
                           <motion.div 
                             layoutId="sidebarActivePill"
@@ -172,7 +244,6 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Sidebar Expansion Toggle */}
         <div className="p-4 border-t border-gray-50 h-16 flex items-center justify-center">
           <button 
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -183,14 +254,18 @@ const Dashboard = () => {
         </div>
       </motion.aside>
 
-      {/* ===== MAIN CANVASES ===== */}
+      {/* ===== MAIN CONTENT ===== */}
       <div className="flex-grow h-full flex flex-col overflow-hidden relative">
         
-        {/* Navigation Bar */}
         <header className="h-20 border-b border-gray-100 bg-white flex items-center justify-between px-8 shrink-0 z-20">
           <div className="flex items-center gap-2">
             <span className="text-sm font-black tracking-wider text-gray-800 uppercase bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
               {activeRoute.replace(/-/g, " ")}
+            </span>
+            <span className={`text-[10px] font-bold uppercase px-2 py-1 rounded tracking-widest ${
+              isAdmin ? "bg-orange-50 border border-orange-100 text-[#FF6B35]" : "bg-orange-50 border border-orange-100 text-[#FF6B35]"
+            }`}>
+              {userRole || "Customer"}
             </span>
           </div>
 
@@ -200,13 +275,22 @@ const Dashboard = () => {
               <span className="w-2 h-2 bg-[#FF6B35] rounded-full absolute top-2.5 right-2.5 ring-4 ring-white" />
             </button>
             <div className="h-6 w-[1px] bg-gray-100" />
-            <div className="w-9 h-9 rounded-xl bg-orange-50 border border-orange-100 flex items-center justify-center font-black text-xs text-[#FF6B35]">
-              A
-            </div>
+            
+            {/* ✅ ইউজার প্রোফাইল - Dynamic */}
+            {user?.photoURL ? (
+              <img 
+                src={user.photoURL} 
+                alt="User Avatar" 
+                className="w-9 h-9 rounded-xl border border-orange-100 object-cover shadow-sm"
+              />
+            ) : (
+              <div className="w-9 h-9 rounded-xl bg-orange-50 border border-orange-100 flex items-center justify-center font-black text-xs text-[#FF6B35] uppercase">
+                {user?.displayName ? user.displayName.charAt(0) : user?.email ? user.email.charAt(0) : "U"}
+              </div>
+            )}
           </div>
         </header>
 
-        {/* ===== WORKSPACE CONTENT ===== */}
         <main className="flex-grow w-full overflow-y-auto overflow-x-hidden p-8 relative z-10">
           <AnimatePresence mode="wait">
             <motion.div
@@ -218,25 +302,43 @@ const Dashboard = () => {
               className="w-full h-full space-y-6"
             >
               
+              {/* ===== Customer Routes ===== */}
               {activeRoute === "view-food" && <ViewFood />}
               {activeRoute === "place-order" && <PlaceAndOrder />}
               {activeRoute === "order-list" && <OrderList />}
+              
+              {/* ===== Admin Routes (শুধু Admin দেখতে পাবে) ===== */}
+              {isAdmin && (
+                <>
+                  {activeRoute === "all-orders" && <ViewAlOrders />}
+                  {activeRoute === "customer-details" && <CustomerDetails />}
+                  {activeRoute === "view-payment-status" && <ViewPaymentStatus />}
+                  {activeRoute === "manage-food" && <ManageFood />}
+                  {activeRoute === "add-food" && <AddFoodModal />}
+                </>
+              )}
 
-
-              {/* Other Routes Placeholder Container */}
-              {activeRoute !== "view-food" && (
+              {/* ===== Fallback ===== */}
+              {activeRoute !== "view-food" && 
+               activeRoute !== "place-order" && 
+               activeRoute !== "order-list" && 
+               activeRoute !== "all-orders" && 
+               activeRoute !== "customer-details" && 
+               activeRoute !== "view-payment-status" && 
+               activeRoute !== "manage-food" && 
+               activeRoute !== "add-food" && (
                 <div className="w-full h-full border border-dashed border-gray-200 rounded-[28px] flex flex-col items-center justify-center p-8 bg-white shadow-sm">
                   <div className="w-12 h-12 rounded-2xl bg-orange-50 border border-orange-100 text-[#FF6B35] flex items-center justify-center mb-4 shadow-sm">
                     <span className="text-lg">📦</span>
                   </div>
                   <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">
-                    Routing Terminal Target
+                    {activeRoute.replace(/-/g, " ")}
                   </h3>
                   <h2 className="text-lg font-black text-gray-800 mt-0.5 capitalize">
-                    {activeRoute.replace(/-/g, " ")} Module
+                    Coming Soon
                   </h2>
                   <p className="text-[11px] text-gray-400 font-medium mt-1.5 max-w-xs text-center leading-relaxed">
-                    আপনার এই কাস্টম কম্পোনেন্ট সাব-মডিউল ফাইলটি ইম্পোর্ট করে এখানে ডক করে দিন।
+                    এই মডিউলটি শীঘ্রই যোগ করা হবে
                   </p>
                 </div>
               )}
