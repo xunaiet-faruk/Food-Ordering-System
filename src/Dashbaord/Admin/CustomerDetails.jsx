@@ -168,13 +168,7 @@ const CustomerDetails = () => {
     );
   }
 
-  // ৫. অ্যাডমিন হলে আসল ড্যাশবোর্ড কন্টেন্ট রেন্ডার হবে
-  const stats = {
-    total: customersData.length,
-    active: customersData.filter(c => c.status === "Active").length,
-    inactive: customersData.filter(c => c.status === "Inactive").length,
-    admins: customersData.filter(c => c.role === "Admin").length,
-  };
+
 
   return (
     <div className="w-full min-h-full px-4 max-w-7xl mx-auto mb-10">
@@ -241,13 +235,13 @@ const CustomerDetails = () => {
 
               {/* অ্যাকশন বাটন */}
               <div className="flex items-center justify-end gap-2 border-t lg:border-t-0 pt-3 lg:pt-0">
-                <button onClick={() => { setSelectedCustomer(customer); setShowDetails(true); }} className="p-2 rounded-xl bg-gray-50 border text-gray-500 hover:text-[#FF6B35] hover:bg-orange-50 transition-all">
+                <button onClick={() => { setSelectedCustomer(customer); setShowDetails(true); }} className="cursor-pointer  p-2 rounded-xl bg-gray-50 border text-gray-500 hover:text-[#FF6B35] hover:bg-orange-50 transition-all">
                   <FaEye size={12} />
                 </button>
-                <button onClick={() => handleUpdateRole(customer)} className="p-2 rounded-xl bg-gray-50 border text-gray-500 hover:text-purple-600 hover:bg-purple-50 transition-all">
+                <button onClick={() => handleUpdateRole(customer)} className="cursor-pointer  p-2 rounded-xl bg-gray-50 border text-gray-500 hover:text-purple-600 hover:bg-purple-50 transition-all">
                   <FaUserCog size={12} />
                 </button>
-                <button onClick={() => handleDeleteUser(customer)} className="p-2 rounded-xl bg-gray-50 border text-gray-500 hover:text-rose-600 hover:bg-rose-50 transition-all">
+                <button onClick={() => handleDeleteUser(customer)} className="cursor-pointer  p-2 rounded-xl bg-gray-50 border text-gray-500 hover:text-rose-600 hover:bg-rose-50 transition-all">
                   <FaTrash size={12} />
                 </button>
               </div>
@@ -271,7 +265,7 @@ const CustomerDetails = () => {
                       <p className="text-[10px] text-gray-400">{selectedCustomer._id || selectedCustomer.id}</p>
                     </div>
                   </div>
-                  <button onClick={() => setShowDetails(false)} className="text-gray-400 hover:text-[#FF6B35] text-xl font-bold">×</button>
+                  <button onClick={() => setShowDetails(false)} className="text-gray-400 cursor-pointer hover:text-[#FF6B35] text-xl font-bold">×</button>
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-4 space-y-4 text-left">

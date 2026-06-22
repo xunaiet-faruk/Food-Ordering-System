@@ -1,582 +1,568 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  FaSearch, FaFilter, FaClock, FaCheckCircle, 
-  FaTimes, FaTruck, FaEye, FaStar, FaShoppingBag,
-  FaChevronDown, FaCalendarAlt, FaReceipt, FaPrint,
-  FaDownload, FaShare, FaEllipsisV, FaCircle,
-  FaUser, FaPhone, FaMapMarkerAlt, FaEdit,
-  FaTrash, FaCheck, FaSpinner, FaSync
+  FaEye, FaReceipt, FaUser, FaTrash, FaCalendarAlt, FaTimes,
+  FaSpinner, FaSync, FaPhone, FaMapMarkerAlt, FaClock, FaCheckCircle,
+  FaShoppingBag, FaMoneyBillWave, FaTruck
 } from 'react-icons/fa';
+import Swal from 'sweetalert2';
+import Useaxios from '../../Hooks/Useaxios';
 
 const ViewAllOrders = () => {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filterStatus, setFilterStatus] = useState("All");
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showDetails, setShowDetails] = useState(false);
-  const [showStatusModal, setShowStatusModal] = useState(false);
-  const [selectedStatus, setSelectedStatus] = useState("");
+  const [deletingId, setDeletingId] = useState(null);
+  const [error, setError] = useState(null);
 
-  // ===== হার্ডকোডেড অর্ডার ডেটা =====
-  const ordersData = [
-    {
-      id: "ORD-001",
-      date: "2026-06-20",
-      time: "10:30 AM",
-      customer: {
-        name: "John Doe",
-        phone: "+880 1234 567890",
-        address: "House #12, Road #5, Gulshan, Dhaka",
-        email: "john@email.com"
-      },
-      items: [
-        { name: "Classic Beef Burger", quantity: 2, price: 12.5, image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=100" },
-        { name: "Margherita Pizza", quantity: 1, price: 10.9, image: "https://images.unsplash.com/photo-1604068549290-dea0e4a305ca?q=80&w=100" }
-      ],
-      total: 35.9,
-      deliveryFee: 2.0,
-      grandTotal: 37.9,
-      status: "Delivered",
-      paymentMethod: "Cash on Delivery",
-      deliveryNote: "Please call before delivery",
-      rating: 5,
-      review: "Great food! Loved the burger.",
-      estimatedDelivery: "2026-06-20 11:00 AM"
-    },
-    {
-      id: "ORD-002",
-      date: "2026-06-20",
-      time: "12:15 PM",
-      customer: {
-        name: "Jane Smith",
-        phone: "+880 1987 654321",
-        address: "House #45, Road #3, Banani, Dhaka",
-        email: "jane@email.com"
-      },
-      items: [
-        { name: "Chocolate Fudge Cake", quantity: 3, price: 8.0, image: "https://images.unsplash.com/photo-1578985545062-69928b1d9587?q=80&w=100" },
-        { name: "Classic Beef Burger", quantity: 1, price: 12.5, image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=100" }
-      ],
-      total: 36.5,
-      deliveryFee: 2.0,
-      grandTotal: 38.5,
-      status: "Preparing",
-      paymentMethod: "Card Payment",
-      deliveryNote: "Leave at the security desk",
-      rating: null,
-      review: null,
-      estimatedDelivery: "2026-06-20 01:00 PM"
-    },
-    {
-      id: "ORD-003",
-      date: "2026-06-19",
-      time: "06:45 PM",
-      customer: {
-        name: "Mike Johnson",
-        phone: "+880 1756 789012",
-        address: "House #8, Road #12, Dhanmondi, Dhaka",
-        email: "mike@email.com"
-      },
-      items: [
-        { name: "Pepperoni Pizza", quantity: 2, price: 14.9, image: "https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=100" },
-        { name: "Crispy Honey Wings", quantity: 1, price: 10.0, image: "https://images.unsplash.com/photo-1567622417610-85093b134f59?q=80&w=100" }
-      ],
-      total: 39.8,
-      deliveryFee: 2.0,
-      grandTotal: 41.8,
-      status: "On the way",
-      paymentMethod: "Cash on Delivery",
-      deliveryNote: "",
-      rating: 4,
-      review: "Pizza was amazing!",
-      estimatedDelivery: "2026-06-19 07:30 PM"
-    },
-    {
-      id: "ORD-004",
-      date: "2026-06-19",
-      time: "02:20 PM",
-      customer: {
-        name: "Sarah Wilson",
-        phone: "+880 1678 901234",
-        address: "House #22, Road #8, Uttara, Dhaka",
-        email: "sarah@email.com"
-      },
-      items: [
-        { name: "BBQ Chicken Pizza", quantity: 1, price: 13.5, image: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?q=80&w=100" },
-        { name: "Chocolate Fudge Cake", quantity: 2, price: 8.0, image: "https://images.unsplash.com/photo-1578985545062-69928b1d9587?q=80&w=100" },
-        { name: "Classic Beef Burger", quantity: 1, price: 12.5, image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=100" }
-      ],
-      total: 42.0,
-      deliveryFee: 2.0,
-      grandTotal: 44.0,
-      status: "Delivered",
-      paymentMethod: "Card Payment",
-      deliveryNote: "Ring the doorbell twice",
-      rating: 5,
-      review: "Excellent food and quick delivery!",
-      estimatedDelivery: "2026-06-19 03:00 PM"
-    },
-    {
-      id: "ORD-005",
-      date: "2026-06-18",
-      time: "08:10 PM",
-      customer: {
-        name: "David Brown",
-        phone: "+880 1890 123456",
-        address: "House #56, Road #2, Mirpur, Dhaka",
-        email: "david@email.com"
-      },
-      items: [
-        { name: "Margherita Pizza", quantity: 2, price: 10.9, image: "https://images.unsplash.com/photo-1604068549290-dea0e4a305ca?q=80&w=100" },
-        { name: "Crispy Honey Wings", quantity: 2, price: 10.0, image: "https://images.unsplash.com/photo-1567622417610-85093b134f59?q=80&w=100" }
-      ],
-      total: 41.8,
-      deliveryFee: 2.0,
-      grandTotal: 43.8,
-      status: "Cancelled",
-      paymentMethod: "Cash on Delivery",
-      deliveryNote: "",
-      rating: null,
-      review: null,
-      estimatedDelivery: "2026-06-18 09:00 PM"
-    },
-    {
-      id: "ORD-006",
-      date: "2026-06-18",
-      time: "04:30 PM",
-      customer: {
-        name: "Emily Taylor",
-        phone: "+880 1567 890123",
-        address: "House #10, Road #15, Baridhara, Dhaka",
-        email: "emily@email.com"
-      },
-      items: [
-        { name: "Classic Beef Burger", quantity: 3, price: 12.5, image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=100" },
-        { name: "Chocolate Fudge Cake", quantity: 1, price: 8.0, image: "https://images.unsplash.com/photo-1578985545062-69928b1d9587?q=80&w=100" }
-      ],
-      total: 45.5,
-      deliveryFee: 2.0,
-      grandTotal: 47.5,
-      status: "Preparing",
-      paymentMethod: "Card Payment",
-      deliveryNote: "Call upon arrival",
-      rating: null,
-      review: null,
-      estimatedDelivery: "2026-06-18 05:30 PM"
+  const axiosInstance = Useaxios();
+
+  const getOrderId = (id) => {
+    if (!id) return null;
+    if (typeof id === 'object' && id.$oid) return id.$oid;
+    if (typeof id === 'string') return id;
+    if (typeof id === 'object' && id.toString) return id.toString();
+    return String(id);
+  };
+
+  const getItemId = (item) => {
+    if (!item) return null;
+    if (item._id) {
+      if (typeof item._id === 'object' && item._id.$oid) return item._id.$oid;
+      if (typeof item._id === 'string') return item._id;
+      if (typeof item._id === 'object' && item._id.toString) return item._id.toString();
     }
-  ];
-
-  // ===== স্ট্যাটাস ফিল্টার =====
-  const statusFilters = [
-    { label: "All", value: "All", icon: <FaCircle size={8} />, count: ordersData.length },
-    { label: "Delivered", value: "Delivered", icon: <FaCheckCircle size={10} className="text-green-500" />, count: ordersData.filter(o => o.status === "Delivered").length },
-    { label: "Preparing", value: "Preparing", icon: <FaClock size={10} className="text-amber-500" />, count: ordersData.filter(o => o.status === "Preparing").length },
-    { label: "On the way", value: "On the way", icon: <FaTruck size={10} className="text-blue-500" />, count: ordersData.filter(o => o.status === "On the way").length },
-    { label: "Cancelled", value: "Cancelled", icon: <FaTimes size={10} className="text-red-500" />, count: ordersData.filter(o => o.status === "Cancelled").length }
-  ];
-
-  // ===== স্ট্যাটাস অপশন (আপডেটের জন্য) =====
-  const statusOptions = ["Preparing", "On the way", "Delivered", "Cancelled"];
-
-  // ===== ফিল্টার এবং সার্চ =====
-  const filteredOrders = ordersData.filter(order => {
-    const matchesSearch = order.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         order.customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         order.customer.phone.includes(searchQuery) ||
-                         order.customer.email.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = filterStatus === "All" || order.status === filterStatus;
-    return matchesSearch && matchesStatus;
-  });
-
-  // ===== স্ট্যাটাসের জন্য রং =====
-  const getStatusColor = (status) => {
-    const colors = {
-      "Delivered": "bg-green-50 text-green-700 border-green-200",
-      "Preparing": "bg-amber-50 text-amber-700 border-amber-200",
-      "On the way": "bg-blue-50 text-blue-700 border-blue-200",
-      "Cancelled": "bg-rose-50 text-rose-700 border-rose-200"
-    };
-    return colors[status] || "bg-gray-50 text-gray-700 border-gray-200";
+    if (item.id) return String(item.id);
+    return null;
   };
 
-  const getStatusIcon = (status) => {
-    const icons = {
-      "Delivered": <FaCheckCircle className="text-green-500" />,
-      "Preparing": <FaClock className="text-amber-500" />,
-      "On the way": <FaTruck className="text-blue-500" />,
-      "Cancelled": <FaTimes className="text-red-500" />
-    };
-    return icons[status] || <FaClock className="text-gray-500" />;
+  const fetchOrders = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      console.log("🔄 Fetching orders from API...");
+      const response = await axiosInstance.get('/cart');
+      console.log("📦 Full API Response:", response);
+      
+      let ordersData = [];
+      
+      if (response.data) {
+        if (response.data.data && Array.isArray(response.data.data)) {
+          ordersData = response.data.data;
+        } else if (Array.isArray(response.data)) {
+          ordersData = response.data;
+        } else if (response.data.success && response.data.data) {
+          ordersData = response.data.data;
+        } else {
+          for (let key in response.data) {
+            if (Array.isArray(response.data[key])) {
+              ordersData = response.data[key];
+              break;
+            }
+          }
+        }
+      }
+      
+      ordersData = ordersData.map(order => ({
+        ...order,
+        _id: typeof order._id === 'object' && order._id.$oid ? order._id.$oid : order._id,
+        items: Array.isArray(order.items) ? order.items.map(item => ({
+          ...item,
+          _id: typeof item._id === 'object' && item._id.$oid ? item._id.$oid : item._id
+        })) : []
+      }));
+      
+      setOrders(ordersData);
+    } catch (error) {
+      console.error("❌ Error fetching orders:", error);
+      setError(error.message || "Failed to load orders");
+      Swal.fire({
+        icon: 'error',
+        title: 'Error!',
+        text: error.message || 'Failed to load orders',
+        confirmButtonColor: '#FF6B35'
+      });
+      setOrders([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // ===== স্ট্যাটাস আপডেট =====
-  const handleStatusUpdate = (orderId, newStatus) => {
-    // এখানে API কল হবে
-    console.log(`Order ${orderId} status updated to ${newStatus}`);
-    setShowStatusModal(false);
-    alert(`Order ${orderId} status updated to ${newStatus}!`);
+  useEffect(() => {
+    fetchOrders();
+  }, []);
+
+  const handleDeleteOrder = async (order) => {
+    const email = order.email;
+    if (!email) {
+      Swal.fire('Error', 'No email found for this order', 'error');
+      return;
+    }
+
+    const result = await Swal.fire({
+      title: 'Delete Order?',
+      html: `
+        <div class="text-left">
+          <p class="mb-2">Are you sure you want to delete this order?</p>
+          <p class="text-sm text-gray-500">Customer: ${email}</p>
+          <p class="text-sm text-gray-500">Items: ${order.items?.length || 0}</p>
+        </div>
+      `,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#E11D48',
+      cancelButtonColor: '#6B7280',
+      confirmButtonText: 'Yes, Delete!',
+      cancelButtonText: 'Cancel'
+    });
+
+    if (result.isConfirmed) {
+      setDeletingId(email);
+      Swal.fire({
+        title: 'Deleting...',
+        text: 'Please wait',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+      });
+
+      try {
+        const response = await axiosInstance.delete(`/cart/${encodeURIComponent(email)}`);
+        if (response.data?.success || response.status === 200) {
+          setOrders(prev => prev.filter(o => o.email !== email));
+          if (selectedOrder && selectedOrder.email === email) {
+            setShowDetails(false);
+          }
+          Swal.close();
+          Swal.fire({
+            icon: 'success',
+            title: 'Deleted!',
+            text: 'Order deleted successfully',
+            timer: 1500,
+            showConfirmButton: false
+          });
+        } else {
+          throw new Error(response.data?.message || 'Delete failed');
+        }
+      } catch (error) {
+        Swal.close();
+        console.error("Delete error:", error);
+        Swal.fire({
+          icon: 'error',
+          title: 'Error!',
+          text: error.message || 'Failed to delete order',
+          confirmButtonColor: '#FF6B35'
+        });
+      } finally {
+        setDeletingId(null);
+      }
+    }
   };
 
-  // ===== ডিটেইলস ভিউ =====
+  const handleDeleteItem = async (order, item) => {
+    const email = order.email;
+    const itemId = getItemId(item);
+    
+    if (!email || !itemId) {
+      Swal.fire('Error', 'Invalid IDs', 'error');
+      return;
+    }
+
+    const result = await Swal.fire({
+      title: 'Remove Item?',
+      text: `Do you want to remove "${item.name}" from this order?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#E11D48',
+      cancelButtonColor: '#6B7280',
+      confirmButtonText: 'Yes, Remove!',
+      cancelButtonText: 'Cancel'
+    });
+
+    if (result.isConfirmed) {
+      Swal.fire({
+        title: 'Removing...',
+        text: 'Please wait',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+      });
+
+      try {
+        const response = await axiosInstance.delete(
+          `/cart/${encodeURIComponent(email)}/item/${itemId}`
+        );
+        
+        if (response.data?.success) {
+          if (response.data.cartEmpty || response.data.itemsCount === 0) {
+            setOrders(prev => prev.filter(o => o.email !== email));
+            setShowDetails(false);
+          } else {
+            setOrders(prev => prev.map(o => {
+              if (o.email === email) {
+                return {
+                  ...o,
+                  items: o.items.filter(i => getItemId(i) !== itemId)
+                };
+              }
+              return o;
+            }));
+            setSelectedOrder(prev => ({
+              ...prev,
+              items: prev.items.filter(i => getItemId(i) !== itemId)
+            }));
+          }
+          Swal.close();
+          Swal.fire({
+            icon: 'success',
+            title: 'Removed!',
+            text: 'Item removed successfully',
+            timer: 1500,
+            showConfirmButton: false
+          });
+        } else {
+          throw new Error(response.data?.message || 'Remove failed');
+        }
+      } catch (error) {
+        Swal.close();
+        console.error("Item delete error:", error);
+        Swal.fire({
+          icon: 'error',
+          title: 'Error!',
+          text: error.message || 'Failed to remove item',
+          confirmButtonColor: '#FF6B35'
+        });
+      }
+    }
+  };
+
   const handleViewDetails = (order) => {
     setSelectedOrder(order);
     setShowDetails(true);
+    document.body.style.overflow = 'hidden';
   };
 
-  // ===== স্ট্যাটাস চেঞ্জ মোডাল =====
-  const handleStatusChange = (order) => {
-    setSelectedOrder(order);
-    setSelectedStatus(order.status);
-    setShowStatusModal(true);
+  const closeModal = () => {
+    setShowDetails(false);
+    document.body.style.overflow = 'auto';
   };
+
+  const calculateTotal = (items) => {
+    if (!items || !Array.isArray(items)) return 0;
+    return items.reduce((acc, item) => acc + ((item.price || 0) * (item.quantity || 0)), 0);
+  };
+
+  const handleImageError = (e) => {
+    e.target.src = "https://via.placeholder.com/100?text=Food";
+  };
+
+  if (loading) {
+    return (
+      <div className="w-full min-h-[60vh] flex flex-col items-center justify-center gap-4">
+        <div className="w-12 h-12 border-4 border-[#FF6B35] border-t-transparent rounded-full animate-spin" />
+        <p className="text-gray-500 font-medium animate-pulse">Loading orders...</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="w-full min-h-full">
+    <div className="w-full min-h-full p-4 sm:p-6 bg-gray-50/50">
       
-      {/* ===== হেডার ===== */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-gray-100">
         <div>
           <h1 className="text-2xl font-black text-gray-900 flex items-center gap-3">
             <FaReceipt className="text-[#FF6B35]" />
             All Orders
             <span className="text-sm font-bold text-gray-400 bg-gray-100 px-3 py-1 rounded-full">
-              {ordersData.length}
+              {orders.length}
             </span>
           </h1>
-          <p className="text-xs text-gray-400 mt-0.5">
-            Manage and track all customer orders
-          </p>
+          <p className="text-xs text-gray-400 mt-0.5">Manage and track all customer orders</p>
         </div>
- 
+       
       </div>
 
+      {error && (
+        <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm">
+          <strong>Error:</strong> {error}
+        </div>
+      )}
 
-      {/* ===== অর্ডার লিস্ট ===== */}
       <div className="mt-6 space-y-3">
-        {filteredOrders.length === 0 ? (
+        {orders.length === 0 ? (
           <div className="text-center py-16 bg-white rounded-2xl border border-dashed border-gray-200">
             <span className="text-4xl">📦</span>
-            <p className="text-gray-400 font-bold mt-3">No orders found</p>
-            <p className="text-xs text-gray-300">Try adjusting your search or filter</p>
+            <p className="text-gray-400 font-bold mt-3">No orders found in database</p>
+            <p className="text-xs text-gray-300 mt-1">Orders will appear here once customers place them</p>
+            <button
+              onClick={fetchOrders}
+              className="mt-4 px-6 py-2 bg-[#FF6B35] text-white rounded-xl text-sm font-bold hover:bg-orange-600 transition-colors"
+            >
+              Try Again
+            </button>
           </div>
         ) : (
-          filteredOrders.map((order, index) => (
-            <motion.div
-              key={order.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.03 }}
-              className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm hover:shadow-md transition-all"
-            >
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
-                
-                {/* ===== অর্ডার আইডি & ডেট ===== */}
-                <div className="md:col-span-2">
-                  <p className="text-sm font-black text-gray-900">{order.id}</p>
-                  <p className="text-[10px] text-gray-400 flex items-center gap-1">
-                    <FaCalendarAlt size={9} /> {order.date}
-                  </p>
-                </div>
+          orders.map((order, index) => {
+            const email = order.email || `order-${index}`;
+            const grandTotal = calculateTotal(order.items);
+            const isDeleting = deletingId === email;
 
-                {/* ===== কাস্টমার ===== */}
-                <div className="md:col-span-3">
-                  <p className="text-sm font-bold text-gray-800">{order.customer.name}</p>
-                  <p className="text-[10px] text-gray-400 flex items-center gap-1">
-                    <FaPhone size={8} /> {order.customer.phone}
-                  </p>
-                </div>
-
-                {/* ===== আইটেম ===== */}
-                <div className="md:col-span-2">
-                  <div className="flex items-center gap-1">
-                    {order.items.slice(0, 3).map((item, i) => (
-                      <div key={i} className="w-8 h-8 rounded-lg overflow-hidden border border-gray-100">
-                        <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
-                      </div>
-                    ))}
-                    {order.items.length > 3 && (
-                      <span className="text-[9px] font-bold text-gray-400 ml-1">+{order.items.length - 3}</span>
-                    )}
+            return (
+              <motion.div
+                key={email}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.03 }}
+                className={`bg-white rounded-2xl border border-gray-100 p-5 shadow-sm hover:shadow-md transition-all ${
+                  isDeleting ? 'opacity-50 pointer-events-none' : ''
+                }`}
+              >
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+                  
+                  <div className="md:col-span-3">
+                    <p className="text-sm font-black text-gray-900 truncate">
+                      {email.split('@')[0] || 'Guest'}
+                    </p>
+                    <p className="text-[10px] text-gray-400 flex items-center gap-1 mt-0.5">
+                      <FaCalendarAlt size={9} /> 
+                      {order.createdAt ? new Date(order.createdAt).toLocaleDateString() : 'N/A'}
+                    </p>
                   </div>
-                  <p className="text-[10px] text-gray-400 mt-0.5">
-                    {order.items.reduce((acc, i) => acc + i.quantity, 0)} items
-                  </p>
-                </div>
 
-                {/* ===== স্ট্যাটাস ===== */}
-                <div className="md:col-span-2">
-                  <span className={`px-3 py-1 rounded-full text-[10px] font-bold border ${getStatusColor(order.status)} flex items-center gap-1.5 w-fit`}>
-                    {getStatusIcon(order.status)}
-                    {order.status}
-                  </span>
-                </div>
+                  <div className="md:col-span-4">
+                    <p className="text-sm font-bold text-gray-800 truncate">
+                      {order.customerName || email.split('@')[0] || 'Guest'}
+                    </p>
+                    <p className="text-[10px] text-gray-400 truncate">{email || 'No email'}</p>
+                  </div>
 
-                {/* ===== টোটাল ===== */}
-                <div className="md:col-span-1 text-right">
-                  <p className="text-sm font-black text-[#FF6B35]">${order.grandTotal.toFixed(2)}</p>
-                  <p className="text-[9px] text-gray-400">{order.paymentMethod}</p>
-                </div>
+                  <div className="md:col-span-3">
+                    <div className="flex items-center gap-1">
+                      {order.items?.slice(0, 3).map((item, i) => (
+                        <div key={i} className="w-8 h-8 rounded-lg overflow-hidden border border-gray-100 flex-shrink-0">
+                          <img 
+                            src={item.image} 
+                            alt={item.name} 
+                            onError={handleImageError}
+                            className="w-full h-full object-cover" 
+                          />
+                        </div>
+                      ))}
+                      {order.items?.length > 3 && (
+                        <span className="text-[9px] font-bold text-gray-400 ml-1">+{order.items.length - 3}</span>
+                      )}
+                    </div>
+                    <p className="text-[10px] text-gray-400 mt-0.5">
+                      {order.items?.reduce((acc, i) => acc + (i.quantity || 0), 0) || 0} items
+                    </p>
+                  </div>
 
-                {/* ===== অ্যাকশন ===== */}
-                <div className="md:col-span-2 flex items-center justify-end gap-1.5">
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => handleViewDetails(order)}
-                    className="w-8 h-8 rounded-xl bg-gray-50 border border-gray-100 flex items-center justify-center text-gray-400 hover:text-[#FF6B35] hover:bg-orange-50/50 hover:border-orange-100 transition-all"
-                    title="View Details"
-                  >
-                    <FaEye size={12} />
-                  </motion.button>
-                  
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => handleStatusChange(order)}
-                    className="w-8 h-8 rounded-xl bg-gray-50 border border-gray-100 flex items-center justify-center text-gray-400 hover:text-blue-500 hover:bg-blue-50/50 hover:border-blue-100 transition-all"
-                    title="Update Status"
-                  >
-                    <FaEdit size={12} />
-                  </motion.button>
-                  
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="w-8 h-8 rounded-xl bg-gray-50 border border-gray-100 flex items-center justify-center text-gray-400 hover:text-rose-500 hover:bg-rose-50/50 hover:border-rose-100 transition-all"
-                    title="Delete Order"
-                  >
-                    <FaTrash size={12} />
-                  </motion.button>
+                  <div className="md:col-span-1 text-left md:text-right">
+                    <p className="text-sm font-black text-[#FF6B35]">${grandTotal.toFixed(2)}</p>
+                  </div>
+
+                  <div className="md:col-span-1 flex items-center justify-end gap-2">
+                    <button
+                      onClick={() => handleViewDetails(order)}
+                      className="w-8 h-8 rounded-xl bg-gray-50 border border-gray-100 flex items-center justify-center text-gray-400 hover:text-[#FF6B35] hover:bg-orange-50 transition-all"
+                    >
+                      <FaEye size={12} />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteOrder(order)}
+                      disabled={isDeleting}
+                      className="w-8 h-8 rounded-xl bg-gray-50 border border-gray-100 flex items-center justify-center text-gray-400 hover:text-rose-500 hover:bg-rose-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isDeleting ? <FaSpinner className="animate-spin" size={12} /> : <FaTrash size={12} />}
+                    </button>
+                  </div>
+
                 </div>
-              </div>
-            </motion.div>
-          ))
+              </motion.div>
+            );
+          })
         )}
       </div>
 
-      {/* ===== অর্ডার ডিটেইলস মোডাল ===== */}
+      {/* Modal - Fixed positioning with cancel button */}
       <AnimatePresence>
         {showDetails && selectedOrder && (
           <>
+            {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 0.5 }}
               exit={{ opacity: 0 }}
-              onClick={() => setShowDetails(false)}
-              className="fixed inset-0 bg-black z-40 cursor-pointer"
+              onClick={closeModal}
+              className="fixed inset-0 bg-black z-50 cursor-pointer"
             />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="fixed inset-4 sm:inset-10 z-50 bg-white rounded-3xl shadow-2xl max-w-3xl mx-auto overflow-y-auto p-6 sm:p-8"
-            >
-              {/* মোডাল হেডার */}
-              <div className="flex items-center justify-between pb-4 border-b border-gray-100">
-                <div>
-                  <h2 className="text-xl font-black text-gray-900">Order Details</h2>
-                  <p className="text-xs text-gray-400">{selectedOrder.id} • {selectedOrder.date}</p>
-                </div>
+            
+            {/* Modal Container - Centered */}
+            <div className="fixed inset-0 z-50 mt-14 overflow-y-auto flex items-center justify-center p-4">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                transition={{ type: "spring", damping: 25 }}
+                className="bg-white rounded-3xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden relative mx-auto my-auto"
+              >
+                {/* Close Button - Top Right */}
                 <button
-                  onClick={() => setShowDetails(false)}
-                  className="w-10 h-10 rounded-xl bg-gray-50 border border-gray-100 flex items-center justify-center text-gray-400 hover:text-rose-500 hover:bg-rose-50 transition-all text-xl"
+                  onClick={closeModal}
+                  className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/90 hover:bg-white text-gray-600 hover:text-gray-900 flex items-center justify-center text-xl shadow-lg transition-all"
                 >
-                  ×
+                  <FaTimes />
                 </button>
-              </div>
 
-              {/* স্ট্যাটাস */}
-              <div className="mt-4 flex flex-wrap items-center gap-3">
-                <span className={`px-3 py-1.5 rounded-full text-xs font-bold border ${getStatusColor(selectedOrder.status)} flex items-center gap-2`}>
-                  {getStatusIcon(selectedOrder.status)}
-                  {selectedOrder.status}
-                </span>
-                <span className="text-xs text-gray-400 flex items-center gap-1">
-                  <FaTruck size={10} /> Est. Delivery: {selectedOrder.estimatedDelivery}
-                </span>
-                {selectedOrder.rating && (
-                  <span className="flex items-center gap-0.5 text-amber-500 text-xs font-bold">
-                    <FaStar size={12} /> {selectedOrder.rating}/5
-                  </span>
-                )}
-              </div>
-
-              {/* কাস্টমার ইনফো */}
-              <div className="mt-6 p-4 bg-gray-50 rounded-2xl">
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Customer Details</p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
-                  <div>
-                    <p className="text-[10px] text-gray-400">Name</p>
-                    <p className="text-sm font-bold text-gray-900 flex items-center gap-1">
-                      <FaUser size={10} className="text-gray-400" /> {selectedOrder.customer.name}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] text-gray-400">Phone</p>
-                    <p className="text-sm font-bold text-gray-900 flex items-center gap-1">
-                      <FaPhone size={10} className="text-gray-400" /> {selectedOrder.customer.phone}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] text-gray-400">Email</p>
-                    <p className="text-sm font-bold text-gray-900">{selectedOrder.customer.email}</p>
-                  </div>
-                  <div className="sm:col-span-2">
-                    <p className="text-[10px] text-gray-400">Delivery Address</p>
-                    <p className="text-sm font-bold text-gray-900 flex items-center gap-1">
-                      <FaMapMarkerAlt size={10} className="text-gray-400" /> {selectedOrder.customer.address}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* অর্ডার আইটেম */}
-              <div className="mt-6">
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Order Items</p>
-                <div className="space-y-2">
-                  {selectedOrder.items.map((item, index) => (
-                    <div key={index} className="flex items-center gap-3 p-2 bg-gray-50 rounded-xl">
-                      <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0">
-                        <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-sm font-bold text-gray-900">{item.name}</p>
-                        <p className="text-xs text-gray-400">Qty: {item.quantity}</p>
-                      </div>
-                      <p className="text-sm font-black text-[#FF6B35]">${(item.price * item.quantity).toFixed(2)}</p>
+                {/* Header with gradient */}
+                <div className="bg-gradient-to-r from-[#FF6B35] to-orange-500 p-6 pr-16">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
+                      <FaReceipt className="text-white text-xl" />
                     </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* প্রাইস ব্রেকডাউন */}
-              <div className="mt-6 p-4 bg-gradient-to-r from-orange-50 to-yellow-50 rounded-2xl border border-orange-100">
-                <div className="space-y-1.5">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Subtotal</span>
-                    <span className="font-bold text-gray-900">${selectedOrder.total.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Delivery Fee</span>
-                    <span className="font-bold text-gray-900">${selectedOrder.deliveryFee.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Payment Method</span>
-                    <span className="font-bold text-gray-900">{selectedOrder.paymentMethod}</span>
-                  </div>
-                  {selectedOrder.deliveryNote && (
-                    <div className="flex justify-between text-sm pt-2 border-t border-orange-100">
-                      <span className="text-gray-500">Delivery Note</span>
-                      <span className="font-medium text-gray-700 text-right max-w-[60%]">{selectedOrder.deliveryNote}</span>
+                    <div>
+                      <h2 className="text-xl font-black text-white">Order Details</h2>
+                      <p className="text-white/80 text-sm">
+                        {selectedOrder.email || 'No email'}
+                      </p>
                     </div>
-                  )}
-                  <div className="flex justify-between text-lg font-black text-[#FF6B35] pt-2 border-t border-orange-200">
-                    <span>Grand Total</span>
-                    <span>${selectedOrder.grandTotal.toFixed(2)}</span>
                   </div>
                 </div>
-              </div>
 
-              {/* রিভিউ */}
-              {selectedOrder.rating && (
-                <div className="mt-4 p-4 bg-amber-50 rounded-2xl border border-amber-100">
+                {/* Order Status Badge */}
+                <div className="px-6 py-3 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="flex items-center gap-0.5 text-amber-500 font-black">
-                      <FaStar size={14} /> {selectedOrder.rating}
+                    <span className="text-xs font-bold text-gray-400 uppercase">Status:</span>
+                    <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold flex items-center gap-1">
+                      <FaCheckCircle size={10} /> {selectedOrder.status || 'Pending'}
                     </span>
-                    <span className="text-xs font-bold text-gray-400">/ 5</span>
                   </div>
-                  <p className="text-sm text-gray-700 mt-1">"{selectedOrder.review}"</p>
-                </div>
-              )}
-
-              {/* অ্যাকশন বাটন */}
-              <div className="flex gap-3 mt-6 pt-4 border-t border-gray-100">
-                <button
-                  onClick={() => setShowDetails(false)}
-                  className="flex-1 py-3 rounded-xl bg-gray-100 text-gray-600 font-bold text-sm hover:bg-gray-200 transition-colors"
-                >
-                  Close
-                </button>
-                <button className="flex-1 py-3 rounded-xl bg-[#FF6B35] text-white font-bold text-sm hover:bg-orange-600 transition-colors flex items-center justify-center gap-2">
-                  <FaShoppingBag size={14} /> View All Orders
-                </button>
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
-
-      {/* ===== স্ট্যাটাস আপডেট মোডাল ===== */}
-      <AnimatePresence>
-        {showStatusModal && selectedOrder && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 0.5 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowStatusModal(false)}
-              className="fixed inset-0 bg-black z-40 cursor-pointer"
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="fixed inset-0 z-50 flex items-center justify-center p-4"
-            >
-              <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-6">
-                <div className="flex items-center justify-between pb-4 border-b border-gray-100">
-                  <h3 className="text-lg font-black text-gray-900">Update Order Status</h3>
-                  <button
-                    onClick={() => setShowStatusModal(false)}
-                    className="text-gray-400 hover:text-gray-600 transition-colors text-xl"
-                  >
-                    ×
-                  </button>
+                  <div className="flex items-center gap-2 text-xs text-gray-400">
+                    <FaClock size={10} />
+                    <span>{selectedOrder.createdAt ? new Date(selectedOrder.createdAt).toLocaleString() : 'N/A'}</span>
+                  </div>
                 </div>
 
-                <div className="mt-4">
-                  <p className="text-sm text-gray-600 mb-2">Order: <span className="font-bold">{selectedOrder.id}</span></p>
-                  <p className="text-xs text-gray-400 mb-4">Current Status: <span className="font-bold">{selectedOrder.status}</span></p>
-                  
+                {/* Customer Info */}
+                <div className="p-6 border-b border-gray-100">
+                  <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                    <FaUser size={12} /> Customer Information
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="flex items-center gap-2 text-sm">
+                      <FaUser className="text-gray-400" size={14} />
+                      <span className="font-medium text-gray-800">{selectedOrder.customerName || selectedOrder.email || 'N/A'}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <FaPhone className="text-gray-400" size={14} />
+                      <span className="text-gray-600">{selectedOrder.phone || 'N/A'}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm col-span-2">
+                      <FaMapMarkerAlt className="text-gray-400" size={14} />
+                      <span className="text-gray-600">{selectedOrder.address || 'No address provided'}</span>
+                    </div>
+                    {selectedOrder.deliveryNote && (
+                      <div className="flex items-center gap-2 text-sm col-span-2">
+                        <span className="text-gray-400">📝</span>
+                        <span className="text-gray-500 text-xs italic">"{selectedOrder.deliveryNote}"</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Items */}
+                <div className="p-6 border-b border-gray-100 max-h-60 overflow-y-auto">
+                  <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                    <FaShoppingBag size={12} /> Items Ordered ({selectedOrder.items?.length || 0})
+                  </h3>
                   <div className="space-y-2">
-                    {statusOptions.map((status) => (
-                      <button
-                        key={status}
-                        onClick={() => setSelectedStatus(status)}
-                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all border ${
-                          selectedStatus === status
-                            ? "bg-[#FF6B35] border-[#FF6B35] text-white shadow-md shadow-orange-500/10"
-                            : "bg-white border-gray-200 text-gray-600 hover:border-gray-300"
-                        }`}
-                      >
-                        {status === "Preparing" && <FaClock size={16} />}
-                        {status === "On the way" && <FaTruck size={16} />}
-                        {status === "Delivered" && <FaCheckCircle size={16} />}
-                        {status === "Cancelled" && <FaTimes size={16} />}
-                        {status}
-                        {selectedStatus === status && <FaCheck className="ml-auto" size={14} />}
-                      </button>
-                    ))}
+                    {selectedOrder.items?.map((item, index) => {
+                      const itemId = getItemId(item);
+                      return (
+                        <motion.div
+                          key={itemId || index}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: index * 0.05 }}
+                          className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-all group"
+                        >
+                          <div className="w-14 h-14 rounded-lg overflow-hidden flex-shrink-0 bg-white border border-gray-200">
+                            <img 
+                              src={item.image} 
+                              alt={item.name} 
+                              onError={handleImageError}
+                              className="w-full h-full object-cover" 
+                            />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-bold text-gray-900">{item.name}</p>
+                            <p className="text-xs text-gray-400">
+                              Qty: {item.quantity || 0} × ${item.price || 0}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <p className="text-sm font-black text-[#FF6B35]">
+                              ${((item.price || 0) * (item.quantity || 0)).toFixed(2)}
+                            </p>
+                            <button 
+                              onClick={() => handleDeleteItem(selectedOrder, item)}
+                              className="text-gray-300 hover:text-rose-500 transition-all p-1 hover:bg-rose-50 rounded-lg"
+                              title="Remove item"
+                            >
+                              <FaTimes size={12} />
+                            </button>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
                   </div>
                 </div>
 
-                <div className="flex gap-3 mt-6 pt-4 border-t border-gray-100">
+                {/* Total */}
+                <div className="p-6 bg-gradient-to-r from-orange-50 to-amber-50">
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500">Subtotal</span>
+                      <span className="font-bold text-gray-700">${calculateTotal(selectedOrder.items).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500 flex items-center gap-1">
+                        <FaTruck size={12} /> Delivery Fee
+                      </span>
+                      <span className="font-bold text-gray-700">$2.00</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500 flex items-center gap-1">
+                        <FaMoneyBillWave size={12} /> Payment Method
+                      </span>
+                      <span className="font-bold text-gray-700 capitalize">{selectedOrder.paymentMethod || 'Cash'}</span>
+                    </div>
+                    <div className="flex justify-between text-xl font-black text-[#FF6B35] pt-2 border-t border-orange-200">
+                      <span>Total Amount</span>
+                      <span>${(calculateTotal(selectedOrder.items) + 2).toFixed(2)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Actions - with Cancel button */}
+                <div className="p-6 bg-gray-50 flex flex-col sm:flex-row gap-3">
                   <button
-                    onClick={() => setShowStatusModal(false)}
-                    className="flex-1 py-3 rounded-xl bg-gray-100 text-gray-600 font-bold text-sm hover:bg-gray-200 transition-colors"
+                    onClick={closeModal}
+                    className="flex-1 py-2.5 rounded-xl bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold text-sm transition-all"
                   >
                     Cancel
                   </button>
                   <button
-                    onClick={() => handleStatusUpdate(selectedOrder.id, selectedStatus)}
-                    className="flex-1 py-3 rounded-xl bg-[#FF6B35] text-white font-bold text-sm hover:bg-orange-600 transition-colors flex items-center justify-center gap-2"
+                    onClick={() => {
+                      closeModal();
+                      handleDeleteOrder(selectedOrder);
+                    }}
+                    className="flex-1 py-2.5 rounded-xl bg-rose-500 text-white font-bold text-sm hover:bg-rose-600 transition-all flex items-center justify-center gap-2"
                   >
-                    <FaCheck size={14} /> Update Status
+                    <FaTrash size={14} /> Delete Order
                   </button>
                 </div>
-              </div>
-            </motion.div>
+              </motion.div>
+            </div>
           </>
         )}
       </AnimatePresence>

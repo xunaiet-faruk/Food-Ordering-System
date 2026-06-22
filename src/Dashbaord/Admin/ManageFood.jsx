@@ -36,17 +36,32 @@ const ManageFood = () => {
     fetchFoodItems();
   }, []);
 
+  // Helper function to get the ID properly
+  const getFoodId = (item) => {
+    if (!item) return null;
+    if (typeof item._id === 'string') return item._id;
+    if (typeof item._id === 'object' && item._id.$oid) return item._id.$oid;
+    if (item.id) return String(item.id);
+    return null;
+  };
+
   const fetchFoodItems = async () => {
     setLoading(true);
     try {
       const response = await axiosPublic.get('/foods');
+      let items = [];
       if (response.data && response.data.data) {
-        setFoodItems(response.data.data);
+        items = response.data.data;
       } else if (Array.isArray(response.data)) { 
-        setFoodItems(response.data);
-      } else {
-        setFoodItems([]);
+        items = response.data;
       }
+      
+      items = items.map(item => ({
+        ...item,
+        _id: typeof item._id === 'object' && item._id.$oid ? item._id.$oid : item._id
+      }));
+      
+      setFoodItems(items);
     } catch (error) {
       console.error("Error fetching from API:", error);
       Swal.fire({
@@ -75,12 +90,22 @@ const ManageFood = () => {
   };
 
   const openEditModal = (item) => {
-    setSelectedItem(item);
+    const itemId = getFoodId(item);
+    if (!itemId) {
+      Swal.fire('Error', 'Invalid item ID', 'error');
+      return;
+    }
+    
+    setSelectedItem({
+      ...item,
+      _id: itemId
+    });
+    
     setFormData({
-      name: item.name,
+      name: item.name || "",
       category: item.category ? item.category.charAt(0).toUpperCase() + item.category.slice(1) : "Burger",
-      price: item.price,
-      recipe: item.recipe,
+      price: item.price || "",
+      recipe: item.recipe || "",
       image: item.image || "",
       tags: item.tags ? item.tags.join(", ") : "",
       prepTime: item.prepTime || "15 mins",
@@ -90,12 +115,33 @@ const ManageFood = () => {
   };
 
   const openDeleteModal = (item) => {
-    setSelectedItem(item);
+    const itemId = getFoodId(item);
+    if (!itemId) {
+      Swal.fire('Error', 'Invalid item ID', 'error');
+      return;
+    }
+    
+    setSelectedItem({
+      ...item,
+      _id: itemId
+    });
     setIsDeleteModalOpen(true);
   };
 
   const handleEditSubmit = async (e) => {
     e.preventDefault();
+    
+    const itemId = getFoodId(selectedItem);
+    if (!itemId) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Error!',
+        text: 'Invalid item ID. Please try again.',
+        confirmButtonColor: '#FF6B35'
+      });
+      return;
+    }
+    
     setIsSubmitting(true);
 
     try {
@@ -110,12 +156,20 @@ const ManageFood = () => {
         status: formData.status
       };
 
-      const response = await axiosPublic.put(`/foods/${selectedItem._id}`, updatedData);
+      console.log(`🔄 Updating food item with ID: ${itemId}`);
+      console.log('📦 Data being sent:', updatedData);
+
+      const response = await axiosPublic.put(`/foods/${itemId}`, updatedData);
 
       if (response.data.success || response.status === 200) {
-        const updatedItems = foodItems.map(item => 
-          item._id === selectedItem._id ? { ...item, ...updatedData } : item
-        );
+        // Update the local state
+        const updatedItems = foodItems.map(item => {
+          const currentId = getFoodId(item);
+          if (currentId === itemId) {
+            return { ...item, ...updatedData, _id: itemId };
+          }
+          return item;
+        });
         setFoodItems(updatedItems);
         setIsEditModalOpen(false);
         setSelectedItem(null);
@@ -127,13 +181,15 @@ const ManageFood = () => {
           timer: 2000,
           showConfirmButton: false
         });
+      } else {
+        throw new Error(response.data?.message || 'Update failed');
       }
     } catch (error) {
       console.error("Error updating food:", error);
       Swal.fire({
         icon: 'error',
         title: 'Update Failed!',
-        text: error.response?.data?.message || 'Something went wrong!',
+        text: error.response?.data?.message || 'Something went wrong! Please check the console for details.',
         confirmButtonColor: '#FF6B35'
       });
     } finally {
@@ -142,13 +198,28 @@ const ManageFood = () => {
   };
 
   const handleDeleteConfirm = async () => {
+    const itemId = getFoodId(selectedItem);
+    if (!itemId) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Error!',
+        text: 'Invalid item ID. Please try again.',
+        confirmButtonColor: '#FF6B35'
+      });
+      return;
+    }
+    
     setIsSubmitting(true);
 
     try {
-      const response = await axiosPublic.delete(`/foods/${selectedItem._id}`);
+      console.log(`🗑️ Deleting food item with ID: ${itemId}`);
+      const response = await axiosPublic.delete(`/foods/${itemId}`);
 
       if (response.data.success || response.status === 200) {
-        const updatedItems = foodItems.filter(item => item._id !== selectedItem._id);
+        const updatedItems = foodItems.filter(item => {
+          const currentId = getFoodId(item);
+          return currentId !== itemId;
+        });
         setFoodItems(updatedItems);
         setIsDeleteModalOpen(false);
         setSelectedItem(null);
@@ -161,12 +232,7 @@ const ManageFood = () => {
           showConfirmButton: false
         });
       } else {
-        Swal.fire({
-          icon: 'error',
-          title: 'Delete Failed!',
-          text: response.data?.message || 'Something went wrong!',
-          confirmButtonColor: '#FF6B35'
-        });
+        throw new Error(response.data?.message || 'Delete failed');
       }
     } catch (error) {
       console.error("Error deleting food:", error);
@@ -223,7 +289,7 @@ const ManageFood = () => {
         
         <button
           onClick={() => setIsAddModalOpen(true)}
-          className="px-5 py-2.5 rounded-xl bg-[#FF6B35] hover:bg-orange-600 text-white font-bold text-sm transition-colors flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20 w-full sm:w-auto"
+          className="cursor-pointer px-5 py-2.5 rounded-xl bg-[#FF6B35] hover:bg-orange-600 text-white font-bold text-sm transition-colors flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20 w-full sm:w-auto"
         >
           <FaPlus size={14} /> Add New Item
         </button>
@@ -247,7 +313,7 @@ const ManageFood = () => {
             <button
               key={category}
               onClick={() => setFilterCategory(category)}
-              className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
+              className={`px-4 py-1.5 rounded-lg text-xs cursor-pointer font-bold transition-all whitespace-nowrap ${
                 filterCategory === category
                   ? "bg-[#FF6B35] text-white shadow-sm"
                   : "bg-gray-100 text-gray-600 hover:bg-gray-200"
@@ -261,63 +327,65 @@ const ManageFood = () => {
 
       {/* ===== ফুড গ্রিড ===== */}
       <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-        {filteredItems.map((item) => (
-          <div key={item._id} className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm flex gap-4 hover:shadow-md transition-shadow group">
-            <img 
-              src={item.image} 
-              alt={item.name} 
-              className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl object-cover shrink-0"
-              onError={handleImageError}
-            />
-            
-            <div className="flex-1 min-w-0 flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between gap-1">
-                  <h3 className="text-sm font-black text-gray-900 truncate group-hover:text-[#FF6B35] transition-colors">
-                    {item.name}
-                  </h3>
-                  <span className="text-[10px] flex items-center gap-0.5 text-amber-400 font-bold shrink-0">
-                    <FaStar size={10} /> {item.rating || "4.5"}
-                  </span>
-                </div>
-                <p className="text-xs text-gray-400 line-clamp-2 mt-0.5">{item.recipe}</p>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="text-xs font-black text-[#FF6B35]">${item.price ? Number(item.price).toFixed(2) : "0.00"}</span>
-                  <span className="text-[9px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-md font-medium uppercase flex items-center gap-0.5 truncate">
-                    <FaClock size={8} /> {item.prepTime || "15 mins"}
-                  </span>
-                </div>
-              </div>
+        {filteredItems.map((item) => {
+          const itemId = getFoodId(item);
+          return (
+            <div key={itemId || Math.random()} className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm flex gap-4 hover:shadow-md transition-shadow group">
+              <img 
+                src={item.image} 
+                alt={item.name} 
+                className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl object-cover shrink-0"
+                onError={handleImageError}
+              />
               
-              <div className="flex justify-between items-center mt-2 pt-2 border-t border-gray-50">
-                <div className="flex gap-1 overflow-hidden max-w-[50%]">
-                  {item.tags && item.tags.slice(0, 2).map((tag, i) => (
-                    <span key={i} className="text-[8px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded font-medium truncate">
-                      #{tag}
+              <div className="flex-1 min-w-0 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between gap-1">
+                    <h3 className="text-sm font-black text-gray-900 truncate group-hover:text-[#FF6B35] transition-colors">
+                      {item.name}
+                    </h3>
+                    <span className="text-[10px] flex items-center gap-0.5 text-amber-400 font-bold shrink-0">
+                      <FaStar size={10} /> {item.rating || "4.5"}
                     </span>
-                  ))}
+                  </div>
+                  <p className="text-xs text-gray-400 line-clamp-2 mt-0.5">{item.recipe}</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-xs font-black text-[#FF6B35]">${item.price ? Number(item.price).toFixed(2) : "0.00"}</span>
+                    <span className="text-[9px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-md font-medium uppercase flex items-center gap-0.5 truncate">
+                      <FaClock size={8} /> {item.prepTime || "15 mins"}
+                    </span>
+                  </div>
                 </div>
-                {/* অ্যাকশন বাটন স্মল ডিভাইসের জন্য অপ্টিমাইজ করা হয়েছে */}
-                <div className="flex gap-1.5 shrink-0">
-                  <button 
-                    onClick={() => openEditModal(item)}
-                    className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 border border-gray-100 rounded-xl transition-all"
-                    title="Edit Item"
-                  >
-                    <FaEdit size={12} />
-                  </button>
-                  <button 
-                    onClick={() => openDeleteModal(item)}
-                    className="p-2 text-gray-500 hover:text-[#FF6B35] hover:bg-orange-50 border border-gray-100 rounded-xl transition-all"
-                    title="Delete Item"
-                  >
-                    <FaTrash size={12} />
-                  </button>
+                
+                <div className="flex justify-between items-center mt-2 pt-2 border-t border-gray-50">
+                  <div className="flex gap-1 overflow-hidden max-w-[50%]">
+                    {item.tags && item.tags.slice(0, 2).map((tag, i) => (
+                      <span key={i} className="text-[8px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded font-medium truncate">
+                        #{tag}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="flex gap-1.5 shrink-0">
+                    <button 
+                      onClick={() => openEditModal(item)}
+                      className="cursor-pointer p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 border border-gray-100 rounded-xl transition-all"
+                      title="Edit Item"
+                    >
+                      <FaEdit size={12} />
+                    </button>
+                    <button 
+                      onClick={() => openDeleteModal(item)}
+                      className="cursor-pointer p-2 text-gray-500 hover:text-[#FF6B35] hover:bg-orange-50 border border-gray-100 rounded-xl transition-all"
+                      title="Delete Item"
+                    >
+                      <FaTrash size={12} />
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {filteredItems.length === 0 && (
@@ -334,32 +402,40 @@ const ManageFood = () => {
         onSuccess={handleAddSuccess}
       />
 
-      {/* ===== EDIT MODAL (স্ক্রোলবার এবং লেফট অ্যালাইনমেন্ট ১০০% ফিক্সড) ===== */}
+      {/* ===== EDIT MODAL ===== */}
       <AnimatePresence>
         {isEditModalOpen && selectedItem && (
           <>
-            <div className="fixed inset-0 bg-black/50 z-40 backdrop-blur-sm" onClick={() => setIsEditModalOpen(false)} />
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.5 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsEditModalOpen(false)}
+              className="fixed inset-0 bg-black z-40 cursor-pointer"
+            />
+            
+            <div className="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4">
               <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                initial={{ opacity: 0, scale: 0.9, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                className="bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col max-h-[85vh] mx-auto overflow-hidden"
+                exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                transition={{ type: "spring", damping: 25 }}
+                className="bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col max-h-[75vh] mx-auto overflow-hidden"
               >
-                {/* মোডাল হেডার */}
-                <div className="flex items-center justify-between p-4 border-b border-gray-100 shrink-0">
-                  <h2 className="text-base font-black text-gray-900 flex items-center gap-2">
-                    <FaEdit className="text-[#FF6B35]" size={15} /> Edit Food Item
+                {/* Modal Header */}
+                <div className="flex items-center justify-between p-4 border-b rounded-t-xl  border-gray-100 shrink-0 bg-[#FF6B35]">
+                  <h2 className="text-base font-black text-white flex items-center gap-2">
+                    <FaEdit className="text-white" size={15} /> Edit Food Item
                   </h2>
                   <button 
                     onClick={() => setIsEditModalOpen(false)} 
-                    className="w-7 h-7 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:text-[#FF6B35] text-lg font-bold transition-colors"
+                    className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:text-[#FF6B35] text-lg font-bold transition-colors"
                   >
-                    ×
+                    <FaTimes size={14} />
                   </button>
                 </div>
 
-                {/* ফর্ম কন্টেইনার - এখানে স্ক্রোলবার দেওয়া হয়েছে */}
+                {/* Form Container */}
                 <form onSubmit={handleEditSubmit} className="flex-1 overflow-y-auto p-4 space-y-4 text-left max-h-[65vh] scrollbar-thin scrollbar-thumb-gray-200">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
@@ -459,12 +535,12 @@ const ManageFood = () => {
                   </div>
                 </form>
 
-                {/* মোডাল ফুটার অ্যাকশন বাটন */}
+                {/* Modal Footer Actions */}
                 <div className="p-4 border-t border-gray-100 bg-gray-50 shrink-0 flex gap-2">
                   <button
                     type="button"
                     onClick={() => setIsEditModalOpen(false)}
-                    className="flex-1 py-2 rounded-xl bg-white border border-gray-200 text-gray-600 font-bold text-xs hover:bg-gray-100 transition-colors"
+                    className="flex-1 py-2.5 rounded-xl bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold text-sm transition-colors"
                   >
                     Cancel
                   </button>
@@ -472,13 +548,13 @@ const ManageFood = () => {
                     type="submit"
                     onClick={handleEditSubmit}
                     disabled={isSubmitting}
-                    className="flex-1 py-2 rounded-xl bg-[#FF6B35] hover:bg-orange-600 text-white font-bold text-xs flex items-center justify-center gap-1.5 disabled:opacity-50 transition-colors"
+                    className="flex-1 py-2.5 rounded-xl bg-[#FF6B35] hover:bg-orange-600 text-white font-bold text-sm flex items-center justify-center gap-1.5 disabled:opacity-50 transition-colors"
                   >
                     {isSubmitting ? (
-                      <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                     ) : (
                       <>
-                        <FaSave size={12} /> Save Changes
+                        <FaSave size={14} /> Save Changes
                       </>
                     )}
                   </button>
@@ -489,43 +565,52 @@ const ManageFood = () => {
         )}
       </AnimatePresence>
 
-      {/* ===== DELETE MODAL (১০০% স্ক্রোল ফিক্সড এবং ব্র্যান্ড কালার এডজাস্টেড) ===== */}
+      {/* ===== DELETE MODAL ===== */}
       <AnimatePresence>
         {isDeleteModalOpen && selectedItem && (
           <>
-            <div className="fixed inset-0 bg-black/50 z-40 backdrop-blur-sm" onClick={() => setIsDeleteModalOpen(false)} />
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.5 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsDeleteModalOpen(false)}
+              className="fixed inset-0 bg-black z-40 cursor-pointer"
+            />
+            
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
               <motion.div
-                initial={{ opacity: 0, scale: 0.93 }}
+                initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.93 }}
-                className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-5 text-center mx-auto max-h-[80vh] overflow-y-auto scrollbar-thin"
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ type: "spring", damping: 25 }}
+                className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 text-center mx-auto"
               >
-                <div className="w-14 h-14 rounded-full bg-orange-50 flex items-center justify-center mx-auto mb-3">
-                  <FaTrash className="text-[#FF6B35] text-xl" />
+                <div className="w-16 h-16 rounded-full bg-orange-50 flex items-center justify-center mx-auto mb-4">
+                  <FaTrash className="text-[#FF6B35] text-2xl" />
                 </div>
-                <h3 className="text-base font-black text-gray-900">Delete Food Item?</h3>
-                <p className="text-xs text-gray-400 mt-1.5 px-2">
+                <h3 className="text-lg font-black text-gray-900">Delete Food Item?</h3>
+                <p className="text-sm text-gray-400 mt-2">
                   Are you sure you want to delete <span className="font-bold text-gray-700">"{selectedItem.name}"</span>?
                 </p>
+                <p className="text-xs text-gray-400 mt-1">This action cannot be undone.</p>
 
-                <div className="flex gap-2.5 mt-5">
+                <div className="flex gap-3 mt-6">
                   <button
                     onClick={() => setIsDeleteModalOpen(false)}
-                    className="flex-1 py-2 rounded-xl bg-gray-100 text-gray-600 font-bold text-xs hover:bg-gray-200 transition-colors"
+                    className="flex-1 py-2.5 rounded-xl bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold text-sm transition-colors"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleDeleteConfirm}
                     disabled={isSubmitting}
-                    className="flex-1 py-2 rounded-xl bg-[#FF6B35] hover:bg-orange-600 text-white font-bold text-xs flex items-center justify-center gap-1.5 disabled:opacity-50 transition-colors"
+                    className="flex-1 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50 transition-colors"
                   >
                     {isSubmitting ? (
-                      <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                     ) : (
                       <>
-                        <FaTrash size={11} /> Delete
+                        <FaTrash size={14} /> Delete
                       </>
                     )}
                   </button>

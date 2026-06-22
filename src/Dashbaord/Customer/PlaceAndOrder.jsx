@@ -60,7 +60,12 @@ const PlaceAndOrder = () => {
         .then((response) => {
           const cartData = response.data?.data;
           if (cartData && cartData.items && cartData.items.length > 0) {
-            setCart(cartData.items);
+            // Ensure cart items have _id
+            const itemsWithId = cartData.items.map(item => ({
+              ...item,
+              _id: item._id || item.id || `item-${Math.random().toString(36).substr(2, 9)}`
+            }));
+            setCart(itemsWithId);
           }
         })
         .catch((err) => console.error("Error loading cart:", err));
@@ -88,7 +93,12 @@ const PlaceAndOrder = () => {
           i._id === item._id ? { ...i, quantity: i.quantity + 1 } : i
         );
       } else {
-        updatedCart = [...prev, { ...item, quantity: 1 }];
+        // Ensure item has _id
+        const itemWithId = {
+          ...item,
+          _id: item._id || `item-${Math.random().toString(36).substr(2, 9)}`
+        };
+        updatedCart = [...prev, { ...itemWithId, quantity: 1 }];
       }
       saveCartToDB(updatedCart);
       
@@ -154,6 +164,17 @@ const PlaceAndOrder = () => {
     setIsSubmitting(true);
 
     try {
+      // Ensure each item in cart has a proper _id
+      const itemsWithId = cart.map(item => ({
+        ...item,
+        _id: item._id || `item-${Math.random().toString(36).substr(2, 9)}`,
+        // Ensure other required fields exist
+        price: item.price || 0,
+        quantity: item.quantity || 1,
+        name: item.name || 'Unknown Item',
+        image: item.image || 'https://via.placeholder.com/100?text=Food'
+      }));
+
       const orderData = {
         email: userEmail,
         customerName: formData.name,
@@ -161,7 +182,7 @@ const PlaceAndOrder = () => {
         address: formData.address,
         deliveryNote: formData.deliveryNote,
         paymentMethod: formData.paymentMethod,
-        items: cart,
+        items: itemsWithId,
         subtotal: cartTotal,
         deliveryFee: 2.00,
         total: cartTotal + 2,
@@ -169,18 +190,33 @@ const PlaceAndOrder = () => {
         createdAt: new Date().toISOString()
       };
 
+      console.log("📦 Sending order data:", JSON.stringify(orderData, null, 2));
+
       const response = await axiosPublic.post('/orders', orderData);
-      console.log("Order response:", response.data);
+      console.log("✅ Order response:", response.data);
 
       if (response.data.success) {
+        // Clear cart after successful order
+        await saveCartToDB([]);
+        setCart([]);
         setOrderStep(3);
+        
+        Swal.fire({
+          icon: 'success',
+          title: 'Order Placed!',
+          text: 'Your order has been placed successfully!',
+          timer: 2000,
+          showConfirmButton: false
+        });
+      } else {
+        throw new Error(response.data?.message || 'Order placement failed');
       }
     } catch (error) {
-      console.error("Error placing order:", error);
+      console.error("❌ Error placing order:", error);
       Swal.fire({
         icon: 'error',
         title: 'Order Failed!',
-        text: 'Something went wrong. Please try again.',
+        text: error.message || 'Something went wrong. Please try again.',
         confirmButtonColor: '#FF6B35'
       });
     } finally {
