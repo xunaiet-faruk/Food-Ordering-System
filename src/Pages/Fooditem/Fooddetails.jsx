@@ -67,10 +67,8 @@ const FoodDetails = () => {
       });
   }, [id]);
 
-
   const addToCart = async () => {
     if (!user?.email) {
-      alert("Please login first to add items to cart!");
       navigate("/login");
       return;
     }
@@ -78,7 +76,6 @@ const FoodDetails = () => {
     setIsAddingToCart(true);
 
     try {
-    
       const cartResponse = await axiosPublic.get(`/cart/${user.email}`);
       let existingCart = cartResponse.data?.data || { email: user.email, items: [] };
       
@@ -97,16 +94,14 @@ const FoodDetails = () => {
         });
       }
 
-     
       await axiosPublic.post('/cart', {
         email: user.email,
         items: existingCart.items
       });
 
-      alert(`✅ ${quantity}x ${food.name} added to cart!`);
+      navigate('/dashboard/place-order');
     } catch (error) {
       console.error("Error adding to cart:", error);
-      alert("Failed to add to cart. Please try again.");
     } finally {
       setIsAddingToCart(false);
     }
@@ -114,11 +109,11 @@ const FoodDetails = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
+      <div className="min-h-screen flex items-center justify-center bg-white px-4">
         <motion.div 
           animate={{ rotate: 360 }}
           transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
-          className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full" 
+          className="w-10 h-10 sm:w-12 sm:h-12 border-4 border-orange-500 border-t-transparent rounded-full" 
         />
       </div>
     );
@@ -126,9 +121,9 @@ const FoodDetails = () => {
 
   if (!food) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-white space-y-4">
-        <p className="text-gray-500 font-bold">Food item not found!</p>
-        <button onClick={() => navigate(-1)} className="text-orange-500 font-black flex items-center gap-2">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-white space-y-3 sm:space-y-4 px-4">
+        <p className="text-sm sm:text-base text-gray-500 font-bold">Food item not found!</p>
+        <button onClick={() => navigate(-1)} className="text-orange-500 font-bold flex items-center gap-2 text-sm">
           <FaArrowLeft /> Go Back
         </button>
       </div>
@@ -148,24 +143,22 @@ const FoodDetails = () => {
   const imageGallery = [food.image, ...(food.gallery || [])];
 
   return (
-    <div className="bg-white min-h-screen pb-24 text-left overflow-x-hidden">
+    <div className="bg-white min-h-screen pb-16 sm:pb-24 text-left overflow-x-hidden">
      
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+      <div className="max-w-7xl  mx-auto px-3 sm:px-6 lg:px-8 pt-4 sm:pt-20">
         <motion.button
           whileHover={{ x: -4 }}
           onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-gray-500 hover:text-orange-500 transition-colors bg-gray-50 px-3 sm:px-4 py-2 rounded-full border border-gray-100 shadow-sm cursor-pointer"
+          className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs font-bold uppercase tracking-wider text-gray-500 hover:text-orange-500 transition-colors bg-gray-50 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full border border-gray-100 shadow-sm cursor-pointer"
         >
-          <FaArrowLeft size={12} /> Back
+          <FaArrowLeft size={10} /> Back
         </motion.button>
       </div>
 
-
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-16 items-start">
+      <section className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-4 sm:pt-8 lg:pt-12">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 lg:gap-16 items-start">
           
-    
-          <div className="lg:col-span-6 space-y-4 sm:space-y-6">
+          <div className="lg:col-span-6 space-y-3 sm:space-y-6">
             <motion.div
               style={{ rotateX, rotateY, transformStyle: "preserve-3d" }}
               onMouseMove={handleMouse}
@@ -173,7 +166,7 @@ const FoodDetails = () => {
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ type: "spring", stiffness: 80, damping: 15 }}
-              className="w-full aspect-square sm:aspect-[4/3] rounded-2xl sm:rounded-[3rem] overflow-hidden bg-gray-50 shadow-2xl border border-gray-100 relative cursor-grab active:cursor-grabbing"
+              className="w-full aspect-square sm:aspect-[4/3] rounded-2xl sm:rounded-[2.5rem] lg:rounded-[3rem] overflow-hidden bg-gray-50 shadow-xl sm:shadow-2xl border border-gray-100 relative cursor-grab active:cursor-grabbing"
             >
               <motion.img
                 key={activeImage}
@@ -188,20 +181,20 @@ const FoodDetails = () => {
                 }}
               />
               
-              <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-xl text-[10px] sm:text-xs font-black text-gray-800 shadow-lg flex items-center gap-1.5">
-                <FaStar className="text-amber-500" size={12} /> {food.rating || "4.9"}
+              <div className="absolute top-2 sm:top-4 left-2 sm:left-4 bg-white/90 backdrop-blur-md px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl text-[8px] sm:text-xs font-bold text-gray-800 shadow-lg flex items-center gap-1 sm:gap-1.5">
+                <FaStar className="text-amber-500" size={10} /> {food.rating || "4.9"}
               </div>
             </motion.div>
 
             {imageGallery.length > 1 && (
-              <div className="grid grid-cols-3 gap-2 sm:gap-4 px-1 sm:px-2">
+              <div className="grid grid-cols-3 gap-1.5 sm:gap-4 px-0.5 sm:px-2">
                 {imageGallery.map((imgUrl, index) => (
                   <motion.div
                     key={index}
                     whileHover={{ scale: 1.03 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={() => setActiveImage(imgUrl)}
-                    className={`aspect-square rounded-xl sm:rounded-2xl overflow-hidden cursor-pointer border-2 transition-all shadow-sm ${
+                    className={`aspect-square rounded-lg sm:rounded-xl lg:rounded-2xl overflow-hidden cursor-pointer border-2 transition-all shadow-sm ${
                       activeImage === imgUrl ? "border-orange-500 ring-2 sm:ring-4 ring-orange-100" : "border-gray-100 opacity-70 hover:opacity-100"
                     }`}
                   >
@@ -219,76 +212,75 @@ const FoodDetails = () => {
             )}
           </div>
 
-          {/* Right Column: Details */}
           <motion.div 
             variants={containerVariants}
             initial="hidden"
             animate="show"
-            className="lg:col-span-6 space-y-6 sm:space-y-8"
+            className="lg:col-span-6 space-y-4 sm:space-y-6 lg:space-y-8"
           >
-            <motion.div variants={itemVariants} className="space-y-3 sm:space-y-4">
-              <span className="text-[10px] sm:text-xs uppercase font-black text-orange-600 tracking-widest bg-orange-50 px-3 sm:px-4 py-1 sm:py-1.5 rounded-full inline-block border border-orange-100">
+            <motion.div variants={itemVariants} className="space-y-2 sm:space-y-4">
+              <span className="text-[8px] sm:text-[10px] lg:text-xs uppercase font-bold text-orange-600 tracking-widest bg-orange-50 px-2.5 sm:px-4 py-0.5 sm:py-1.5 rounded-full inline-block border border-orange-100">
                 {food.category}
               </span>
-              <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black text-gray-900 tracking-tight leading-tight sm:leading-none">
+              <h1 className="text-xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold text-gray-900 tracking-tight leading-tight sm:leading-none">
                 {food.name}
               </h1>
               
-              <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-gray-500 pt-1 sm:pt-2 text-[10px] sm:text-xs font-bold">
-                <span className="flex items-center gap-1 sm:gap-1.5 bg-gray-50 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl border border-gray-100 shadow-sm">
-                  <FaClock className="text-orange-500" size={12} /> 15-20 Min
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-3 text-gray-500 pt-0.5 sm:pt-2 text-[8px] sm:text-[10px] lg:text-xs font-bold">
+                <span className="flex items-center gap-0.5 sm:gap-1.5 bg-gray-50 px-2 sm:px-3.5 py-1 sm:py-2 rounded-lg sm:rounded-xl border border-gray-100 shadow-sm">
+                  <FaClock className="text-orange-500" size={10} /> 15-20 Min
                 </span>
-                <span className="flex items-center gap-1 sm:gap-1.5 bg-gray-50 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl border border-gray-100 shadow-sm">
-                  <FaFire className="text-red-500" size={12} /> 320 Cal
+                <span className="flex items-center gap-0.5 sm:gap-1.5 bg-gray-50 px-2 sm:px-3.5 py-1 sm:py-2 rounded-lg sm:rounded-xl border border-gray-100 shadow-sm">
+                  <FaFire className="text-red-500" size={10} /> 320 Cal
                 </span>
-                <span className="flex items-center gap-1 sm:gap-1.5 bg-gray-50 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl border border-gray-100 shadow-sm">
-                  <FaLeaf className="text-green-500" size={12} /> 100% Fresh
+                <span className="flex items-center gap-0.5 sm:gap-1.5 bg-gray-50 px-2 sm:px-3.5 py-1 sm:py-2 rounded-lg sm:rounded-xl border border-gray-100 shadow-sm">
+                  <FaLeaf className="text-green-500" size={10} /> 100% Fresh
                 </span>
               </div>
             </motion.div>
 
             <hr className="border-gray-100" />
 
-            <motion.div variants={itemVariants} className="space-y-2">
-              <h3 className="text-[10px] sm:text-xs font-black text-gray-400 uppercase tracking-wider">The Story / Recipe</h3>
-              <p className="text-sm sm:text-base lg:text-lg text-gray-500 font-medium leading-relaxed">
+            <motion.div variants={itemVariants} className="space-y-1 sm:space-y-2">
+              <h3 className="text-[8px] sm:text-[10px] lg:text-xs font-bold text-gray-400 uppercase tracking-wider">The Story / Recipe</h3>
+              <p className="text-xs sm:text-sm lg:text-base text-gray-500 font-medium leading-relaxed">
                 {food.recipe}
               </p>
             </motion.div>
 
             <motion.div 
               variants={itemVariants}
-              className="grid grid-cols-2 gap-3 sm:gap-4 bg-gray-50/80 p-4 sm:p-6 rounded-2xl sm:rounded-[2.5rem] border border-gray-100"
+              className="grid grid-cols-2 gap-2 sm:gap-4 bg-gray-50/80 p-3 sm:p-5 lg:p-6 rounded-xl sm:rounded-2xl lg:rounded-[2.5rem] border border-gray-100"
             >
               <div>
-                <p className="text-[10px] sm:text-[11px] font-bold text-gray-400 uppercase tracking-wider">Unit Price</p>
-                <p className="text-2xl sm:text-3xl font-black text-gray-950 tracking-tight">${food.price}</p>
+                <p className="text-[8px] sm:text-[10px] lg:text-[11px] font-bold text-gray-400 uppercase tracking-wider">Unit Price</p>
+                <p className="text-lg sm:text-2xl lg:text-3xl font-bold text-gray-950 tracking-tight">${food.price}</p>
               </div>
 
               <div className="flex flex-col items-end">
-                <p className="text-[10px] sm:text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1 sm:mb-2">Quantity</p>
-                <div className="flex items-center bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-0.5 sm:p-1 shadow-sm">
+                <p className="text-[8px] sm:text-[10px] lg:text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-0.5 sm:mb-2">Quantity</p>
+                <div className="flex items-center bg-white border border-gray-200 rounded-lg sm:rounded-xl lg:rounded-2xl p-0.5 sm:p-1 shadow-sm">
                   <motion.button
                     whileTap={{ scale: 0.8 }}
                     onClick={() => setQuantity((prev) => Math.max(1, prev - 1))}
-                    className="p-1.5 sm:p-2 text-gray-400 hover:text-orange-500 transition-colors cursor-pointer"
+                    className="p-1 sm:p-1.5 lg:p-2 text-gray-400 hover:text-orange-500 transition-colors cursor-pointer"
                   >
-                    <FaMinus size={10} />
+                    <FaMinus size={8} />
                   </motion.button>
                   <motion.span 
                     key={quantity}
                     initial={{ scale: 0.8, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
-                    className="px-2 sm:px-4 font-black text-sm text-gray-800 inline-block min-w-[24px] text-center"
+                    className="px-2 sm:px-3 lg:px-4 font-bold text-xs sm:text-sm text-gray-800 inline-block min-w-[20px] text-center"
                   >
                     {quantity}
                   </motion.span>
                   <motion.button
                     whileTap={{ scale: 0.8 }}
                     onClick={() => setQuantity((prev) => prev + 1)}
-                    className="p-1.5 sm:p-2 text-gray-400 hover:text-orange-500 transition-colors cursor-pointer"
+                    className="p-1 sm:p-1.5 lg:p-2 text-gray-400 hover:text-orange-500 transition-colors cursor-pointer"
                   >
-                    <FaPlus size={10} />
+                    <FaPlus size={8} />
                   </motion.button>
                 </div>
               </div>
@@ -296,15 +288,15 @@ const FoodDetails = () => {
 
             <motion.div 
               variants={itemVariants}
-              className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-6 pt-2"
+              className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-6 pt-1 sm:pt-2"
             >
               <div>
-                <p className="text-[10px] sm:text-[11px] font-bold text-gray-400 uppercase tracking-wider">Total Cart Value</p>
+                <p className="text-[8px] sm:text-[10px] lg:text-[11px] font-bold text-gray-400 uppercase tracking-wider">Total Cart Value</p>
                 <motion.p 
                   key={quantity}
                   initial={{ y: -10, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
-                  className="text-2xl sm:text-4xl font-black text-orange-500 tracking-tight"
+                  className="text-xl sm:text-2xl lg:text-3xl xl:text-4xl font-bold text-orange-500 tracking-tight"
                 >
                   ${(food.price * quantity).toFixed(2)}
                 </motion.p>
@@ -315,13 +307,13 @@ const FoodDetails = () => {
                 whileTap={{ scale: 0.97 }}
                 onClick={addToCart}
                 disabled={isAddingToCart}
-                className="w-full sm:w-auto flex items-center justify-center gap-2 sm:gap-3 bg-gradient-to-r from-orange-500 to-pink-500 text-white font-black text-sm px-4 sm:px-8 py-3 sm:py-5 rounded-xl sm:rounded-2xl shadow-xl shadow-orange-500/20 cursor-pointer disabled:opacity-50"
+                className="w-full sm:w-auto flex items-center justify-center gap-1.5 sm:gap-3 bg-gradient-to-r from-orange-500 to-pink-500 text-white font-bold text-[10px] sm:text-sm px-4 sm:px-6 lg:px-8 py-2.5 sm:py-3.5 lg:py-5 rounded-lg sm:rounded-xl lg:rounded-2xl shadow-xl shadow-orange-500/20 cursor-pointer disabled:opacity-50"
               >
                 {isAddingToCart ? (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 ) : (
                   <>
-                    <FaShoppingBag size={14} /> Add To Cart
+                    <FaShoppingBag size={12} /> Add To Cart
                   </>
                 )}
               </motion.button>

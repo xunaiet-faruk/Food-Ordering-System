@@ -4,7 +4,7 @@ import { useMemo } from 'react';
 const Useaxios = () => {
     const axiosInstance = useMemo(() => {
         return axios.create({
-            baseURL: 'http://localhost:5000'
+            baseURL: 'https://food-ordering-system-server-five.vercel.app'
            
 
         })

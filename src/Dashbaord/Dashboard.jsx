@@ -156,7 +156,7 @@ const Dashboard = () => {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -10 }}
                   className="flex items-center space-x-2 cursor-pointer"
-                  onClick={() => navigate("/dashboard")}
+                  onClick={() => navigate("/")}
                 >
                   <span className="text-2xl font-black text-[#FF6B35] tracking-tight">🍕 Food</span>
                   <span className="text-2xl font-black text-gray-700 tracking-tight">Hub</span>

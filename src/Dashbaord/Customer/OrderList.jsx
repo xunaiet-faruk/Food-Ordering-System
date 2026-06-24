@@ -254,7 +254,7 @@ const OrderList = () => {
 
       console.log('📤 Sending payment data:', paymentData);
 
-      const response = await fetch('http://localhost:5000/create-payment-v2', {
+      const response = await fetch('https://food-ordering-system-server-five.vercel.app/create-payment-v2', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(paymentData)
