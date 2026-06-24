@@ -24,31 +24,28 @@ const Login = () => {
     password: ""
   });
 
-  // ===== ইমেইল ও পাসওয়ার্ড দিয়ে ফর্ম সাবমিট =====
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    setErrorMessage(""); // আগের এরর রিসেট করা
+    setErrorMessage(""); 
 
     const { email, password } = formData;
 
     try {
-      // ফায়ারবেস লগইন মেথড কল
+     
       await loginUser(email, password);
       
       setIsLoading(false);
       setIsSuccess(true);
       setFormData({ email: "", password: "" });
 
-      // 🟢 সাকসেস মেসেজ দেখিয়ে ১.৫ সেকেন্ড পর হোম ড্যাশবোর্ডে রিডাইরেক্ট
       setTimeout(() => {
         setIsSuccess(false);
-        navigate("/dashboard"); // আপনার হোম পেজের রাউট পাথ
+        navigate("/dashboard");
       }, 1500);
 
     } catch (error) {
       setIsLoading(false);
-      // ফায়ারবেস এরর মেসেজ ফিল্টারিং
       if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
         setErrorMessage("Invalid email or password. Please try again.");
       } else {
@@ -57,7 +54,7 @@ const Login = () => {
     }
   };
 
-  // ===== ওয়ান-ক্লিক গুগল পপআপ লগইন =====
+
   const handleGoogleLogin = async () => {
     setIsLoading(true);
     setErrorMessage("");
@@ -85,7 +82,6 @@ const Login = () => {
   return (
     <div className="flex items-center justify-center p-4">
       
-      {/* ===== সাকসেস মেসেজ টোস্ট ===== */}
       {isSuccess && (
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -97,14 +93,13 @@ const Login = () => {
         </motion.div>
       )}
 
-      {/* ===== মেইন কার্ড ===== */}
+
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="bg-white rounded-2xl shadow-xl max-w-md w-full p-8 border border-gray-100"
       >
-        
-        {/* ===== লোগো ও হেডার ===== */}
+
         <div className="text-center mb-6">
           <div className="w-16 h-16 bg-gradient-to-r from-[#FF6B35] to-orange-400 rounded-2xl flex items-center justify-center text-white text-3xl mx-auto shadow-lg shadow-orange-500/20">
             🍕
@@ -113,7 +108,6 @@ const Login = () => {
           <p className="text-sm text-gray-400">Login to continue your food journey</p>
         </div>
 
-        {/* ===== ফায়ারবেস ইরর নোটিশ জোন ===== */}
         {errorMessage && (
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
@@ -124,7 +118,6 @@ const Login = () => {
           </motion.div>
         )}
 
-        {/* ===== গুগল বাটন ===== */}
         <motion.button
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
@@ -137,17 +130,14 @@ const Login = () => {
           <span className="text-sm font-bold text-gray-700">Sign in with Google</span>
         </motion.button>
 
-        {/* ===== ডিভাইডার ===== */}
         <div className="flex items-center gap-4 my-5">
           <div className="flex-1 h-px bg-gray-200" />
           <span className="text-xs font-bold text-gray-400">OR</span>
           <div className="flex-1 h-px bg-gray-200" />
         </div>
 
-        {/* ===== ফর্ম ===== */}
         <form onSubmit={handleSubmit} className="space-y-4">
-          
-          {/* ইমেইল */}
+   
           <div>
             <label className="text-xs font-bold text-gray-600 block mb-1">
               <FaEnvelope className="inline mr-1.5 text-gray-400" size={11} />
@@ -163,7 +153,6 @@ const Login = () => {
             />
           </div>
 
-          {/* পাসওয়ার্ড */}
           <div>
             <div className="flex items-center justify-between mb-1">
               <label className="text-xs font-bold text-gray-600 block">
@@ -197,7 +186,6 @@ const Login = () => {
             </div>
           </div>
 
-          {/* সাবমিট বাটন */}
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
@@ -216,7 +204,6 @@ const Login = () => {
           </motion.button>
         </form>
 
-        {/* ===== রেজিস্টার লিংক টগলার ===== */}
         <div className="mt-5 text-center">
           <p className="text-sm text-gray-500">
             Don't have an account?{" "}

@@ -18,7 +18,6 @@ const ViewFood = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFood, setSelectedFood] = useState(null);
 
-  // ✅ API থেকে ডাটা লোড
   useEffect(() => {
     console.log("🔄 Fetching foods from API...");
     
@@ -70,7 +69,6 @@ const ViewFood = () => {
     e.target.onerror = null;
   };
 
-  // ✅ Place Order পেজে নেভিগেট
   const goToPlaceOrder = () => {
     navigate('/dashboard/place-order');
   };
@@ -113,7 +111,7 @@ const ViewFood = () => {
               <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={13} />
             </div>
             
-            {/* ✅ Place Order বাটন */}
+            
             <button
               onClick={goToPlaceOrder}
               className="px-4 py-2.5 bg-[#FF6B35] text-white rounded-xl font-bold text-sm hover:bg-orange-600 transition-all flex items-center gap-2 shadow-lg shadow-orange-500/20 whitespace-nowrap"
@@ -204,7 +202,7 @@ const ViewFood = () => {
                       <FaEye size={12} />
                     </button>
                     
-                    {/* ✅ Place Order বাটন */}
+                
                     <button
                       onClick={goToPlaceOrder}
                       className="h-9 px-4 rounded-xl bg-[#FF6B35] hover:bg-orange-600 text-white flex items-center gap-1.5 text-xs font-black shadow-sm transition-all cursor-pointer"

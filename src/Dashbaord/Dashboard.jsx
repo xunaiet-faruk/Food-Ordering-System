@@ -1,4 +1,3 @@
-// src/Dashboard/Dashboard.jsx
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -17,6 +16,7 @@ import ManageFood from "./Admin/ManageFood";
 import Useaxios from "../Hooks/Useaxios";
 import useAuth from "../hooks/useAuth";
 import AddFoodModal from "./Admin/AddFoodModal";
+import PayMentHistory from "./Customer/PayMentHistory";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -29,10 +29,8 @@ const Dashboard = () => {
   const [activeRoute, setActiveRoute] = useState("view-food");
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
-  // ✅ ইউজারের ইমেইল dynamically নিন
   const userEmail = user?.email;
 
-  // ✅ API থেকে ইউজার রোল লোড
   useEffect(() => {
     if (userEmail) {
       setIsRoleLoading(true);
@@ -63,7 +61,6 @@ const Dashboard = () => {
     }
   }, [userEmail, axiosPublic]);
 
-  // ✅ URL থেকে activeRoute সেট করুন
   useEffect(() => {
     const path = location.pathname;
     const route = path.split("/dashboard/")[1] || "view-food";
@@ -83,12 +80,9 @@ const Dashboard = () => {
     navigate(`/dashboard/${routeId}`, { replace: true });
   };
 
-  // ============================================
-  // ✅ শুধুমাত্র ইউজারের রোল অনুযায়ী মেনু দেখান
-  // ============================================
+
   const isAdmin = userRole?.toLowerCase() === "admin";
 
-  // ✅ Admin হলে শুধু Admin মেনু, Customer হলে শুধু Customer মেনু
   const getMenuGroups = () => {
     if (isAdmin) {
       return [
@@ -111,7 +105,7 @@ const Dashboard = () => {
           items: [
             { id: "view-food", label: "View Food Items", icon: <FaUtensils /> },
             { id: "place-order", label: "Place an Order", icon: <FaShoppingCart /> },
-            { id: "make-payment", label: "PayHere Sandbox", icon: <FaCreditCard /> },
+            { id: "payment-history", label: "Pay History", icon: <FaCreditCard /> },
             { id: "order-list", label: "My Orders", icon: <FaCheckCircle /> },
           ]
         }
@@ -121,7 +115,6 @@ const Dashboard = () => {
 
   const menuGroups = getMenuGroups();
 
-  // ✅ ডিফল্ট রাউট সেট করুন
   useEffect(() => {
     if (!isRoleLoading && menuGroups.length > 0) {
       const firstItem = menuGroups[0]?.items[0]?.id;
@@ -148,8 +141,7 @@ const Dashboard = () => {
 
   return (
     <div className="w-screen h-screen bg-[#FAFAFB] text-[#2D3436] font-sans flex overflow-hidden fixed inset-0 select-none">
-      
-      {/* ===== SIDEBAR ===== */}
+
       <motion.aside 
         animate={{ width: isSidebarOpen ? "280px" : "80px" }}
         transition={{ type: "spring", stiffness: 320, damping: 30 }}
@@ -276,7 +268,7 @@ const Dashboard = () => {
             </button>
             <div className="h-6 w-[1px] bg-gray-100" />
             
-            {/* ✅ ইউজার প্রোফাইল - Dynamic */}
+      
             {user?.photoURL ? (
               <img 
                 src={user.photoURL} 
@@ -306,8 +298,10 @@ const Dashboard = () => {
               {activeRoute === "view-food" && <ViewFood />}
               {activeRoute === "place-order" && <PlaceAndOrder />}
               {activeRoute === "order-list" && <OrderList />}
+  
+              {activeRoute === "payment-history" && <PayMentHistory />}
               
-              {/* ===== Admin Routes (শুধু Admin দেখতে পাবে) ===== */}
+              {/* ===== Admin Routes ==== */}
               {isAdmin && (
                 <>
                   {activeRoute === "all-orders" && <ViewAlOrders />}
@@ -327,19 +321,7 @@ const Dashboard = () => {
                activeRoute !== "view-payment-status" && 
                activeRoute !== "manage-food" && 
                activeRoute !== "add-food" && (
-                <div className="w-full h-full border border-dashed border-gray-200 rounded-[28px] flex flex-col items-center justify-center p-8 bg-white shadow-sm">
-                  <div className="w-12 h-12 rounded-2xl bg-orange-50 border border-orange-100 text-[#FF6B35] flex items-center justify-center mb-4 shadow-sm">
-                    <span className="text-lg">📦</span>
-                  </div>
-                  <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">
-                    {activeRoute.replace(/-/g, " ")}
-                  </h3>
-                  <h2 className="text-lg font-black text-gray-800 mt-0.5 capitalize">
-                    Coming Soon
-                  </h2>
-                  <p className="text-[11px] text-gray-400 font-medium mt-1.5 max-w-xs text-center leading-relaxed">
-                    এই মডিউলটি শীঘ্রই যোগ করা হবে
-                  </p>
+               <div>
                 </div>
               )}
 

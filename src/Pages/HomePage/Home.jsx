@@ -5,7 +5,7 @@ import Testimonials from "./Testimonials";
 
 const Home = () => {
     return (
-        <div className=" bg-gradient-to-br from-orange-50 via-white to-pink-50  overflow-hidden container mx-auto w-full min-h-screen">
+        <div className="container mx-auto">
             <Banner />
             <Categories/>
             <Features/>

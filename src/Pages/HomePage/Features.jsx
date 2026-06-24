@@ -2,7 +2,6 @@ import { motion } from "framer-motion";
 import { FaShippingFast, FaUtensils, FaHeadset, FaWallet } from "react-icons/fa";
 
 const Features = () => {
-  // ফিচার ডেটা লিস্ট (আইকন, টাইটেল, ডেসক্রিপশন এবং কাস্টম শ্যাডো/কালার ইফেক্ট সহ)
   const features = [
     {
       id: 1,
@@ -42,7 +41,6 @@ const Features = () => {
     },
   ];
 
-  // স্ক্রিনে আসার টাইমিং অ্যানিমেশন (Stagger Effect)
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -61,15 +59,13 @@ const Features = () => {
   };
 
   return (
-    <section className="py-24 bg-white px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+    <section className="py-24  px-4 sm:px-6 lg:px-8 relative overflow-hidden">
       
-      {/* ব্যাকগ্রাউন্ড লাইটিং ইফেক্ট */}
       <div className="absolute top-1/2 left-1/4 -translate-y-1/2 w-[400px] h-[400px] bg-pink-100/20 rounded-full blur-3xl pointer-events-none -z-10" />
       <div className="absolute top-1/2 right-1/4 -translate-y-1/2 w-[400px] h-[400px] bg-orange-100/20 rounded-full blur-3xl pointer-events-none -z-10" />
 
       <div className="max-w-7xl mx-auto">
         
-        {/* --- ১. সেন্ট্রাল হেডিং সেকশন (ব্ল্যাক + গ্রাডিয়েন্ট) --- */}
         <div className="text-center max-w-2xl mx-auto mb-20">
           <h2 className="text-4xl sm:text-5xl font-black tracking-tight pb-2 text-gray-900">
             Why Choose{" "}
@@ -83,7 +79,6 @@ const Features = () => {
           </p>
         </div>
 
-        {/* --- ২. ফিচার কার্ড গ্রিড (Framer Motion ৩ডি ইফেক্ট) --- */}
         <motion.div
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8"
           variants={containerVariants}
@@ -101,25 +96,20 @@ const Features = () => {
               }}
               className="bg-white border border-gray-100/80 rounded-[2.5rem] p-8 transition-all duration-300 relative overflow-hidden group flex flex-col items-center text-center shadow-sm"
             >
-              {/* হোভার করলে নিচ থেকে ব্যাকগ্রাউন্ড হালকা রঙিন হবে */}
               <div className="absolute inset-0 bg-gradient-to-b from-transparent to-orange-50/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
 
-              {/* আইকন বক্স - হোভার করলে ব্যাকগ্রাউন্ড গ্রাডিয়েন্ট হবে এবং আইকন সাদা হবে */}
               <div className={`w-16 h-16 rounded-2xl ${item.bgColor} ${item.textColor} flex items-center justify-center mb-6 transition-all duration-500 group-hover:bg-gradient-to-br ${item.color} group-hover:text-white group-hover:scale-110 group-hover:rotate-6 shadow-sm`}>
                 {item.icon}
               </div>
 
-              {/* ফিচারের নাম */}
               <h3 className="text-xl font-extrabold text-gray-800 tracking-tight transition-colors duration-300 group-hover:text-[#ff6b35]">
                 {item.title}
               </h3>
 
-              {/* ফিচারের ডেসক্রিপশন */}
               <p className="text-gray-500 mt-3 text-sm font-medium leading-relaxed">
                 {item.desc}
               </p>
 
-              {/* ডেকোরেটিভ কর্নার শেপ */}
               <div className="absolute -top-6 -right-6 w-12 h-12 bg-gray-50 rounded-full transition-all duration-500 group-hover:bg-orange-100/50 group-hover:scale-150 pointer-events-none -z-10" />
             </motion.div>
           ))}

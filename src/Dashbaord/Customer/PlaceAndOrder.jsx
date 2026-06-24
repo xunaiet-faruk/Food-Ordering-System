@@ -60,7 +60,6 @@ const PlaceAndOrder = () => {
         .then((response) => {
           const cartData = response.data?.data;
           if (cartData && cartData.items && cartData.items.length > 0) {
-            // Ensure cart items have _id
             const itemsWithId = cartData.items.map(item => ({
               ...item,
               _id: item._id || item.id || `item-${Math.random().toString(36).substr(2, 9)}`
@@ -93,7 +92,6 @@ const PlaceAndOrder = () => {
           i._id === item._id ? { ...i, quantity: i.quantity + 1 } : i
         );
       } else {
-        // Ensure item has _id
         const itemWithId = {
           ...item,
           _id: item._id || `item-${Math.random().toString(36).substr(2, 9)}`
@@ -141,89 +139,84 @@ const PlaceAndOrder = () => {
   const cartTotal = cart.reduce((total, item) => total + (item.price * item.quantity), 0);
   const cartItemsCount = cart.reduce((total, item) => total + item.quantity, 0);
 
-  const placeOrder = async () => {
-    if (cart.length === 0) {
+const placeOrder = async () => {
+  if (cart.length === 0) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'Cart is Empty!',
+      text: 'Please add items to your cart first.',
+      confirmButtonColor: '#FF6B35'
+    });
+    return;
+  }
+  if (!formData.name || !formData.phone || !formData.address) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'Missing Fields!',
+      text: 'Please fill in all required fields.',
+      confirmButtonColor: '#FF6B35'
+    });
+    return;
+  }
+
+  setIsSubmitting(true);
+
+  try {
+    const itemsWithId = cart.map(item => ({
+      _id: item._id || `item-${Math.random().toString(36).substr(2, 9)}`,
+      name: item.name || 'Unknown Item',
+      price: item.price || 0,
+      quantity: item.quantity || 1,
+      image: item.image || 'https://via.placeholder.com/100?text=Food',
+      category: item.category || 'Unknown'
+    }));
+
+    const orderData = {
+      email: userEmail,
+      customerName: formData.name,
+      phone: formData.phone,
+      address: formData.address,
+      deliveryNote: formData.deliveryNote || '',
+      paymentMethod: formData.paymentMethod || 'cash',
+      items: itemsWithId,
+      subtotal: cartTotal,
+      deliveryFee: 2.00,
+      total: cartTotal + 2,
+      status: "Pending"
+    };
+
+    console.log("📦 Sending order data:", JSON.stringify(orderData, null, 2));
+
+    const response = await axiosPublic.post('/orders', orderData);
+    console.log("✅ Order response:", response.data);
+
+    if (response.data.success) {
+      await saveCartToDB([]);
+      setCart([]);
+      setOrderStep(3);
+      
       Swal.fire({
-        icon: 'warning',
-        title: 'Cart is Empty!',
-        text: 'Please add items to your cart first.',
-        confirmButtonColor: '#FF6B35'
+        icon: 'success',
+        title: 'Order Placed!',
+        text: 'Your order has been placed successfully!',
+        timer: 2000,
+        showConfirmButton: false
       });
-      return;
+    } else {
+      throw new Error(response.data?.message || 'Order placement failed');
     }
-    if (!formData.name || !formData.phone || !formData.address) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Missing Fields!',
-        text: 'Please fill in all required fields.',
-        confirmButtonColor: '#FF6B35'
-      });
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    try {
-      // Ensure each item in cart has a proper _id
-      const itemsWithId = cart.map(item => ({
-        ...item,
-        _id: item._id || `item-${Math.random().toString(36).substr(2, 9)}`,
-        // Ensure other required fields exist
-        price: item.price || 0,
-        quantity: item.quantity || 1,
-        name: item.name || 'Unknown Item',
-        image: item.image || 'https://via.placeholder.com/100?text=Food'
-      }));
-
-      const orderData = {
-        email: userEmail,
-        customerName: formData.name,
-        phone: formData.phone,
-        address: formData.address,
-        deliveryNote: formData.deliveryNote,
-        paymentMethod: formData.paymentMethod,
-        items: itemsWithId,
-        subtotal: cartTotal,
-        deliveryFee: 2.00,
-        total: cartTotal + 2,
-        status: "Pending",
-        createdAt: new Date().toISOString()
-      };
-
-      console.log("📦 Sending order data:", JSON.stringify(orderData, null, 2));
-
-      const response = await axiosPublic.post('/orders', orderData);
-      console.log("✅ Order response:", response.data);
-
-      if (response.data.success) {
-        // Clear cart after successful order
-        await saveCartToDB([]);
-        setCart([]);
-        setOrderStep(3);
-        
-        Swal.fire({
-          icon: 'success',
-          title: 'Order Placed!',
-          text: 'Your order has been placed successfully!',
-          timer: 2000,
-          showConfirmButton: false
-        });
-      } else {
-        throw new Error(response.data?.message || 'Order placement failed');
-      }
-    } catch (error) {
-      console.error("❌ Error placing order:", error);
-      Swal.fire({
-        icon: 'error',
-        title: 'Order Failed!',
-        text: error.message || 'Something went wrong. Please try again.',
-        confirmButtonColor: '#FF6B35'
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
+  } catch (error) {
+    console.error("❌ Error placing order:", error);
+    Swal.fire({
+      icon: 'error',
+      title: 'Order Failed!',
+      text: error.message || 'Something went wrong. Please try again.',
+      confirmButtonColor: '#FF6B35'
+    });
+  } finally {
+    setIsSubmitting(false);
+  }
+};
   const resetOrder = () => {
     setCart([]);
     setOrderStep(1);

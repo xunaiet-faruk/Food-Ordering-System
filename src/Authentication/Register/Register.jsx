@@ -40,11 +40,11 @@ const Register = () => {
         await createUser(email, password);
         await updateUserProfile(name);
 
-        // ✅ ইউজার ইনফো ডাটাবেজে সেভ করুন (রোল "Customer" হিসেবে)
+       
         const userInfo = {
           name: name,
           email: email,
-          role: "Customer"  // ✅ ডিফল্ট রোল Customer
+          role: "Customer"  
         };
         
         const response = await axiosPublic.post('/users', userInfo);
@@ -81,11 +81,11 @@ const Register = () => {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
 
-      // ✅ Google ইউজার ডাটাবেজে সেভ করুন (রোল "Customer" হিসেবে)
+  
       const userInfo = {
         name: user.displayName,
         email: user.email,
-        role: "Customer"  // ✅ ডিফল্ট রোল Customer
+        role: "Customer"  
       };
       
       const response = await axiosPublic.post('/users', userInfo);

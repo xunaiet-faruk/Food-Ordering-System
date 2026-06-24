@@ -27,7 +27,6 @@ const Navbar = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // অ্যাক্টিভ স্টাইল - আন্ডারলাইন ইফেক্ট সহ
   const activeStyle = ({ isActive }) => ({
     color: isActive ? "#ff6b35" : "",
     borderBottom: isActive ? "2px solid #ff6b35" : "none",
@@ -41,17 +40,15 @@ const Navbar = () => {
   ];
 
   return (
-    <nav className="bg-gradient-to-br from-orange-50 via-white to-pink-50 container mx-auto sticky top-0 z-50 ">
-      <div className="px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-
-          {/* ===== লোগো ===== */}
+    <nav className="fixed top-0 left-0 right-0 z-50">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-16 bg-white/30 backdrop-blur-md rounded-full px-6 ">
+          
           <Link to="/" className="flex items-center space-x-2" onClick={closeMenu}>
             <span className="text-2xl font-bold text-orange-500">🍕 Food</span>
             <span className="text-2xl font-bold text-gray-700">Hub</span>
           </Link>
 
-          {/* --- Desktop Menu --- */}
           <div className="hidden md:flex items-center space-x-8">
             {navLinks.map((link) => (
               <NavLink
@@ -66,10 +63,8 @@ const Navbar = () => {
             ))}
           </div>
 
-          {/* --- Desktop Right Side (Auth & Avatar Dropdown) --- */}
           <div className="hidden md:flex items-center space-x-4">
             {user ? (
-              /* 🟢 ইউজার লগইন থাকলে ড্রপডাউন প্রোফাইল মেনু */
               <div className="relative" ref={dropdownRef}>
                 <button
                   onClick={() => setDropdownOpen(!dropdownOpen)}
@@ -82,7 +77,6 @@ const Navbar = () => {
                       className="w-10 h-10 rounded-full object-cover border-2 border-orange-500 shadow-sm hover:scale-105 transition-transform"
                     />
                   ) : (
-                    /* 💫 ইমেজ না থাকলে হালকা পালস অ্যানিমেশন সহ সুন্দর ডিফল্ট আইকন */
                     <motion.div
                       animate={{ scale: [1, 1.04, 1] }}
                       transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
@@ -92,8 +86,6 @@ const Navbar = () => {
                     </motion.div>
                   )}
                 </button>
-
-                {/* ড্রপডাউন বক্স (Framer Motion অ্যানিমেশন সহ) */}
                 <AnimatePresence>
                   {dropdownOpen && (
                     <motion.div
@@ -109,7 +101,7 @@ const Navbar = () => {
                       </div>
 
                       <Link
-                        to="/dashboard" // আপনার ড্যাশবোর্ডের সঠিক পাথ দেবেন
+                        to="/dashboard" 
                         onClick={() => setDropdownOpen(false)}
                         className="flex items-center gap-2.5 px-4 py-2 text-xs font-bold text-gray-600 hover:bg-orange-50 hover:text-[#FF6B35] transition-colors"
                       >
@@ -130,7 +122,6 @@ const Navbar = () => {
                 </AnimatePresence>
               </div>
             ) : (
-              /* 🔴 ইউজার লগআউট থাকলে শুধু লগইন বাটন */
               <Link
                 to="/login"
                 className="bg-gradient-to-r from-[#FF6B35] to-orange-400 text-white px-5 py-2 rounded-xl text-sm font-black shadow-md shadow-orange-500/10 hover:shadow-lg hover:shadow-orange-500/20 transition-all"
@@ -140,9 +131,7 @@ const Navbar = () => {
             )}
           </div>
 
-          {/* --- Mobile Hamburger Icon --- */}
           <div className="md:hidden flex items-center gap-3">
-            {/* মোবাইল মোডেও লগইন থাকলে ইউজারের ছোট্ট অবতার দেখাবে */}
             {user && (
               user.photoURL ? (
                 <img src={user.photoURL} alt="User" className="w-8 h-8 rounded-full border border-orange-400 object-cover" />
@@ -159,14 +148,12 @@ const Navbar = () => {
           </div>
         </div>
       </div>
-
-      {/* --- Mobile Menu (Dropdown) --- */}
       <div
-        className={`md:hidden bg-white border-t border-gray-100 transition-all duration-300 ease-in-out ${
-          isOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0 overflow-hidden"
+        className={`md:hidden bg-white/30 backdrop-blur-md rounded-2xl mx-4 mt-1 transition-all duration-300 ease-in-out ${
+          isOpen ? "max-h-96 opacity-100 p-4" : "max-h-0 opacity-0 overflow-hidden p-0"
         }`}
       >
-        <div className="px-4 py-3 space-y-2">
+        <div className="space-y-2">
           {navLinks.map((link) => (
             <NavLink
               key={link.path}
@@ -184,7 +171,6 @@ const Navbar = () => {
             </NavLink>
           ))}
 
-          {/* মোবাইলে ড্যাশবোর্ড লিঙ্ক (যদি লগইন থাকে) */}
           {user && (
             <Link
               to="/dashboard"
@@ -195,8 +181,7 @@ const Navbar = () => {
             </Link>
           )}
 
-          {/* মোবাইলে Auth সেকশন */}
-          <div className="pt-2 border-t border-gray-100 space-y-2">
+          <div className="pt-2 border-t border-gray-200/50 space-y-2">
             {user ? (
               <button
                 onClick={() => {

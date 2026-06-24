@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { FaPizzaSlice, FaHamburger, FaBirthdayCake, FaIceCream, FaStar, FaShoppingBag } from "react-icons/fa";
 
 const Categories = () => {
-  // ১. ক্যাটাগরি বাটন লিস্ট
   const categories = [
     { id: "pizza", name: "Pizza", icon: <FaPizzaSlice size={20} /> },
     { id: "burger", name: "Burger", icon: <FaHamburger size={20} /> },
@@ -11,7 +10,6 @@ const Categories = () => {
     { id: "dessert", name: "Dessert", icon: <FaIceCream size={20} /> },
   ];
 
-  // ২. একদম স্পেসিফিক রিয়েল ফুড ইমেজ ডেটাবেস (Unsplash Source - ১০০% ওয়ার্কিং)
   const foodProducts = [
     { 
       id: 1, 
@@ -73,14 +71,12 @@ const Categories = () => {
 
   const [activeTab, setActiveTab] = useState("pizza");
 
-  // ক্যাটাগরি অনুযায়ী ফিল্টার করা
   const filteredFoods = foodProducts.filter(food => food.category === activeTab);
 
   return (
     <section className="py-20  px-4 sm:px-6 lg:px-8 relative overflow-hidden">
       <div className="max-w-7xl mx-auto">
         
-        {/* --- ১. সেন্ট্রাল হেডিং সেকশন (Our Food ব্ল্যাক এবং Categories গ্রাডিয়েন্ট) --- */}
         <div className="text-center max-w-2xl mx-auto mb-12">
           <h2 className="text-4xl sm:text-5xl font-black tracking-tight pb-2 text-gray-900">
             Our Food{" "}
@@ -94,7 +90,6 @@ const Categories = () => {
           </p>
         </div>
 
-        {/* --- ২. অ্যানিমেটেড ট্যাব বাটন রিল --- */}
         <div className="flex flex-wrap justify-center items-center gap-3 mb-16">
           {categories.map((tab) => {
             const isActive = activeTab === tab.id;
@@ -108,7 +103,6 @@ const Categories = () => {
                     : "bg-white text-gray-600 hover:bg-orange-50/50 border border-gray-100"
                 }`}
               >
-                {/* বাটন ব্যাকগ্রাউন্ড অ্যানিমেশন */}
                 {isActive && (
                   <motion.div
                     layoutId="activeTabBackground"
@@ -125,7 +119,6 @@ const Categories = () => {
           })}
         </div>
 
-        {/* --- ৩. অ্যানিমেটেড প্রোডাক্ট গ্রিড (রিয়াল ফুড কার্ড) --- */}
         <motion.div layout className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           <AnimatePresence mode="wait">
             {filteredFoods.map((food) => (
@@ -138,7 +131,6 @@ const Categories = () => {
                 transition={{ duration: 0.3 }}
                 className="bg-white rounded-[2rem] p-4 shadow-sm hover:shadow-2xl hover:shadow-orange-500/5 border border-gray-100/80 flex flex-col justify-between group cursor-pointer"
               >
-                {/* রিয়াল ফুড ইমেজ বক্স */}
                 <div className="rounded-[1.5rem] overflow-hidden h-48 relative bg-gray-100">
                   <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-10" />
                   
@@ -150,7 +142,6 @@ const Categories = () => {
                   />
                 </div>
 
-                {/* ইনফরমেশন এবং রেটিং */}
                 <div className="mt-5 space-y-2 flex-grow px-1">
                   <div className="flex items-center gap-1 text-amber-500 text-sm font-bold">
                     <FaStar size={14} /> {food.rating}
@@ -160,7 +151,6 @@ const Categories = () => {
                   </h3>
                 </div>
 
-                {/* প্রাইস এবং কার্ট বাটন */}
                 <div className="flex items-center justify-between mt-5 pt-4 border-t border-gray-50 px-1">
                   <span className="text-xl font-black text-gray-900">{food.price}</span>
                   <motion.button 

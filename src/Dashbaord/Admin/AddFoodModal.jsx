@@ -74,7 +74,7 @@ const AddFoodModal = ({ isOpen, onClose, onSuccess }) => {
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop */}
+     
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 0.5 }}
@@ -83,7 +83,7 @@ const AddFoodModal = ({ isOpen, onClose, onSuccess }) => {
             className="fixed inset-0 bg-black z-40 cursor-pointer"
           />
           
-          {/* Modal Container - Centered */}
+     
           <div className="fixed inset-0 z-50 overflow-y-auto mt-12 flex items-center justify-center p-4">
             <motion.div
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
@@ -92,7 +92,7 @@ const AddFoodModal = ({ isOpen, onClose, onSuccess }) => {
               transition={{ type: "spring", damping: 25 }}
               className="bg-white w-full max-w-lg rounded-2xl shadow-2xl relative mx-auto max-h-[90vh] overflow-hidden"
             >
-              {/* Close Button - Top Right */}
+             
               <button
                 onClick={onClose}
                 className="absolute top-4 right-4 z-10 w-8 h-8 rounded-full bg-gray-50 hover:bg-gray-100 text-gray-400 hover:text-gray-600 flex items-center justify-center transition-colors"
@@ -100,14 +100,13 @@ const AddFoodModal = ({ isOpen, onClose, onSuccess }) => {
                 <FaTimes size={14} />
               </button>
 
-              {/* Header */}
               <div className="pt-6  pb-4 px-6 border-b border-gray-100 bg-[#FF6B35]">
                 <h2 className="text-lg font-black text-white flex items-center gap-2">
                   <FaPlus className="" size={16} /> Add New Food Item
                 </h2>
               </div>
 
-              {/* Form */}
+        
               <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto max-h-[65vh]">
                 <div>
                   <label className="text-xs font-bold text-gray-600 block mb-1">Food Name *</label>
@@ -188,7 +187,6 @@ const AddFoodModal = ({ isOpen, onClose, onSuccess }) => {
                   />
                 </div>
 
-                {/* Action Buttons */}
                 <div className="flex gap-3 pt-4 border-t border-gray-100">
                   <button
                     type="button"

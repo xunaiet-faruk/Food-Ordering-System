@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   FaEye, FaReceipt, FaUser, FaTrash, FaCalendarAlt, FaTimes,
-  FaSpinner, FaSync, FaPhone, FaMapMarkerAlt, FaClock, FaCheckCircle,
-  FaShoppingBag, FaMoneyBillWave, FaTruck
+  FaSpinner, FaClock, FaCheckCircle, FaShoppingBag, FaTruck,
+  FaEdit, FaSave, FaTimesCircle
 } from 'react-icons/fa';
 import Swal from 'sweetalert2';
 import Useaxios from '../../Hooks/Useaxios';
@@ -15,6 +15,8 @@ const ViewAllOrders = () => {
   const [showDetails, setShowDetails] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
   const [error, setError] = useState(null);
+  const [updatingId, setUpdatingId] = useState(null);
+  const [editStatus, setEditStatus] = useState('');
 
   const axiosInstance = Useaxios();
 
@@ -26,24 +28,11 @@ const ViewAllOrders = () => {
     return String(id);
   };
 
-  const getItemId = (item) => {
-    if (!item) return null;
-    if (item._id) {
-      if (typeof item._id === 'object' && item._id.$oid) return item._id.$oid;
-      if (typeof item._id === 'string') return item._id;
-      if (typeof item._id === 'object' && item._id.toString) return item._id.toString();
-    }
-    if (item.id) return String(item.id);
-    return null;
-  };
-
   const fetchOrders = async () => {
     setLoading(true);
     setError(null);
     try {
-      console.log("🔄 Fetching orders from API...");
-      const response = await axiosInstance.get('/cart');
-      console.log("📦 Full API Response:", response);
+      const response = await axiosInstance.get('/orders');
       
       let ordersData = [];
       
@@ -74,8 +63,8 @@ const ViewAllOrders = () => {
       }));
       
       setOrders(ordersData);
+      
     } catch (error) {
-      console.error("❌ Error fetching orders:", error);
       setError(error.message || "Failed to load orders");
       Swal.fire({
         icon: 'error',
@@ -93,10 +82,62 @@ const ViewAllOrders = () => {
     fetchOrders();
   }, []);
 
+  const handleStatusUpdate = async (orderId, newStatus) => {
+    if (!orderId) {
+      Swal.fire('Error', 'No order ID found', 'error');
+      return;
+    }
+
+    setUpdatingId(orderId);
+    
+    try {
+      const response = await axiosInstance.put(`/orders/status-update/${orderId}`, {
+        status: newStatus
+      });
+      
+      if (response.data?.success) {
+        setOrders(prev => prev.map(order => {
+          const orderIdStr = getOrderId(order._id);
+          if (orderIdStr === orderId) {
+            return { ...order, status: newStatus };
+          }
+          return order;
+        }));
+        
+        if (selectedOrder) {
+          const selectedId = getOrderId(selectedOrder._id);
+          if (selectedId === orderId) {
+            setSelectedOrder(prev => ({ ...prev, status: newStatus }));
+          }
+        }
+        
+        Swal.fire({
+          icon: 'success',
+          title: 'Updated!',
+          text: `Order status changed to ${newStatus}`,
+          timer: 1500,
+          showConfirmButton: false
+        });
+      } else {
+        throw new Error(response.data?.message || 'Update failed');
+      }
+    } catch (error) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Error!',
+        text: error.message || 'Failed to update status',
+        confirmButtonColor: '#FF6B35'
+      });
+    } finally {
+      setUpdatingId(null);
+      setEditStatus('');
+    }
+  };
+
   const handleDeleteOrder = async (order) => {
-    const email = order.email;
-    if (!email) {
-      Swal.fire('Error', 'No email found for this order', 'error');
+    const orderId = getOrderId(order._id);
+    if (!orderId) {
+      Swal.fire('Error', 'No order ID found', 'error');
       return;
     }
 
@@ -105,7 +146,8 @@ const ViewAllOrders = () => {
       html: `
         <div class="text-left">
           <p class="mb-2">Are you sure you want to delete this order?</p>
-          <p class="text-sm text-gray-500">Customer: ${email}</p>
+          <p class="text-sm text-gray-500">Order ID: #${orderId.slice(-8).toUpperCase()}</p>
+          <p class="text-sm text-gray-500">Customer: ${order.email}</p>
           <p class="text-sm text-gray-500">Items: ${order.items?.length || 0}</p>
         </div>
       `,
@@ -118,7 +160,7 @@ const ViewAllOrders = () => {
     });
 
     if (result.isConfirmed) {
-      setDeletingId(email);
+      setDeletingId(orderId);
       Swal.fire({
         title: 'Deleting...',
         text: 'Please wait',
@@ -127,10 +169,10 @@ const ViewAllOrders = () => {
       });
 
       try {
-        const response = await axiosInstance.delete(`/cart/${encodeURIComponent(email)}`);
+        const response = await axiosInstance.delete(`/orders/${orderId}`);
         if (response.data?.success || response.status === 200) {
-          setOrders(prev => prev.filter(o => o.email !== email));
-          if (selectedOrder && selectedOrder.email === email) {
+          setOrders(prev => prev.filter(o => getOrderId(o._id) !== orderId));
+          if (selectedOrder && getOrderId(selectedOrder._id) === orderId) {
             setShowDetails(false);
           }
           Swal.close();
@@ -146,7 +188,6 @@ const ViewAllOrders = () => {
         }
       } catch (error) {
         Swal.close();
-        console.error("Delete error:", error);
         Swal.fire({
           icon: 'error',
           title: 'Error!',
@@ -155,82 +196,6 @@ const ViewAllOrders = () => {
         });
       } finally {
         setDeletingId(null);
-      }
-    }
-  };
-
-  const handleDeleteItem = async (order, item) => {
-    const email = order.email;
-    const itemId = getItemId(item);
-    
-    if (!email || !itemId) {
-      Swal.fire('Error', 'Invalid IDs', 'error');
-      return;
-    }
-
-    const result = await Swal.fire({
-      title: 'Remove Item?',
-      text: `Do you want to remove "${item.name}" from this order?`,
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#E11D48',
-      cancelButtonColor: '#6B7280',
-      confirmButtonText: 'Yes, Remove!',
-      cancelButtonText: 'Cancel'
-    });
-
-    if (result.isConfirmed) {
-      Swal.fire({
-        title: 'Removing...',
-        text: 'Please wait',
-        allowOutsideClick: false,
-        didOpen: () => Swal.showLoading()
-      });
-
-      try {
-        const response = await axiosInstance.delete(
-          `/cart/${encodeURIComponent(email)}/item/${itemId}`
-        );
-        
-        if (response.data?.success) {
-          if (response.data.cartEmpty || response.data.itemsCount === 0) {
-            setOrders(prev => prev.filter(o => o.email !== email));
-            setShowDetails(false);
-          } else {
-            setOrders(prev => prev.map(o => {
-              if (o.email === email) {
-                return {
-                  ...o,
-                  items: o.items.filter(i => getItemId(i) !== itemId)
-                };
-              }
-              return o;
-            }));
-            setSelectedOrder(prev => ({
-              ...prev,
-              items: prev.items.filter(i => getItemId(i) !== itemId)
-            }));
-          }
-          Swal.close();
-          Swal.fire({
-            icon: 'success',
-            title: 'Removed!',
-            text: 'Item removed successfully',
-            timer: 1500,
-            showConfirmButton: false
-          });
-        } else {
-          throw new Error(response.data?.message || 'Remove failed');
-        }
-      } catch (error) {
-        Swal.close();
-        console.error("Item delete error:", error);
-        Swal.fire({
-          icon: 'error',
-          title: 'Error!',
-          text: error.message || 'Failed to remove item',
-          confirmButtonColor: '#FF6B35'
-        });
       }
     }
   };
@@ -255,6 +220,61 @@ const ViewAllOrders = () => {
     e.target.src = "https://via.placeholder.com/100?text=Food";
   };
 
+  const getStatusBadge = (status) => {
+    const badges = {
+      "Pending": (
+        <span className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-700 border border-amber-200 rounded-lg text-xs font-semibold">
+          <FaClock /> Pending
+        </span>
+      ),
+      "Paid": (
+        <span className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 text-green-700 border border-green-200 rounded-lg text-xs font-semibold">
+          <FaCheckCircle /> Paid
+        </span>
+      ),
+      "Delivered": (
+        <span className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg text-xs font-semibold">
+          <FaTruck /> Delivered
+        </span>
+      ),
+      "Preparing": (
+        <span className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-50 text-purple-700 border border-purple-200 rounded-lg text-xs font-semibold">
+          <FaClock /> Preparing
+        </span>
+      ),
+      "On the way": (
+        <span className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-lg text-xs font-semibold">
+          <FaTruck /> On the way
+        </span>
+      ),
+      "Cancelled": (
+        <span className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 text-rose-700 border border-rose-200 rounded-lg text-xs font-semibold">
+          <FaTimesCircle /> Cancelled
+        </span>
+      )
+    };
+    return badges[status] || (
+      <span className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 text-gray-700 border border-gray-200 rounded-lg text-xs font-semibold">
+        <FaClock /> {status}
+      </span>
+    );
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+
+  const statusOptions = ['On the way', 'Delivered', 'Cancelled'];
+
   if (loading) {
     return (
       <div className="w-full min-h-[60vh] flex flex-col items-center justify-center gap-4">
@@ -271,14 +291,13 @@ const ViewAllOrders = () => {
         <div>
           <h1 className="text-2xl font-black text-gray-900 flex items-center gap-3">
             <FaReceipt className="text-[#FF6B35]" />
-            All Orders
-            <span className="text-sm font-bold text-gray-400 bg-gray-100 px-3 py-1 rounded-full">
+            All <span className="text-[#FF6B35]">Orders</span>
+            <span className="text-sm font-bold bg-[#FF6B35]/10 text-[#FF6B35] px-3 py-1 rounded-full">
               {orders.length}
             </span>
           </h1>
-          <p className="text-xs text-gray-400 mt-0.5">Manage and track all customer orders</p>
+          <p className="text-xs text-gray-400 mt-0.5">View and manage all customer orders</p>
         </div>
-       
       </div>
 
       {error && (
@@ -291,24 +310,19 @@ const ViewAllOrders = () => {
         {orders.length === 0 ? (
           <div className="text-center py-16 bg-white rounded-2xl border border-dashed border-gray-200">
             <span className="text-4xl">📦</span>
-            <p className="text-gray-400 font-bold mt-3">No orders found in database</p>
-            <p className="text-xs text-gray-300 mt-1">Orders will appear here once customers place them</p>
-            <button
-              onClick={fetchOrders}
-              className="mt-4 px-6 py-2 bg-[#FF6B35] text-white rounded-xl text-sm font-bold hover:bg-orange-600 transition-colors"
-            >
-              Try Again
-            </button>
+            <p className="text-gray-400 font-bold mt-3">No Orders Found</p>
+            <p className="text-xs text-gray-300 mt-1">Orders will appear here</p>
           </div>
         ) : (
           orders.map((order, index) => {
-            const email = order.email || `order-${index}`;
+            const orderId = getOrderId(order._id) || `order-${index}`;
             const grandTotal = calculateTotal(order.items);
-            const isDeleting = deletingId === email;
+            const isDeleting = deletingId === orderId;
+            const isUpdating = updatingId === orderId;
 
             return (
               <motion.div
-                key={email}
+                key={orderId}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.03 }}
@@ -318,24 +332,24 @@ const ViewAllOrders = () => {
               >
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
                   
-                  <div className="md:col-span-3">
-                    <p className="text-sm font-black text-gray-900 truncate">
-                      {email.split('@')[0] || 'Guest'}
+                  <div className="md:col-span-2">
+                    <p className="text-sm font-black text-[#FF6B35]">
+                      #{orderId.slice(-8).toUpperCase()}
                     </p>
                     <p className="text-[10px] text-gray-400 flex items-center gap-1 mt-0.5">
                       <FaCalendarAlt size={9} /> 
-                      {order.createdAt ? new Date(order.createdAt).toLocaleDateString() : 'N/A'}
+                      {formatDate(order.createdAt)}
                     </p>
                   </div>
 
-                  <div className="md:col-span-4">
+                  <div className="md:col-span-2">
                     <p className="text-sm font-bold text-gray-800 truncate">
-                      {order.customerName || email.split('@')[0] || 'Guest'}
+                      {order.customerName || order.email?.split('@')[0] || 'Guest'}
                     </p>
-                    <p className="text-[10px] text-gray-400 truncate">{email || 'No email'}</p>
+                    <p className="text-[10px] text-gray-400 truncate">{order.email || 'No email'}</p>
                   </div>
 
-                  <div className="md:col-span-3">
+                  <div className="md:col-span-2">
                     <div className="flex items-center gap-1">
                       {order.items?.slice(0, 3).map((item, i) => (
                         <div key={i} className="w-8 h-8 rounded-lg overflow-hidden border border-gray-100 flex-shrink-0">
@@ -354,6 +368,51 @@ const ViewAllOrders = () => {
                     <p className="text-[10px] text-gray-400 mt-0.5">
                       {order.items?.reduce((acc, i) => acc + (i.quantity || 0), 0) || 0} items
                     </p>
+                  </div>
+
+                  <div className="md:col-span-2">
+                    {isUpdating ? (
+                      <div className="flex items-center gap-1">
+                        <select
+                          value={editStatus}
+                          onChange={(e) => setEditStatus(e.target.value)}
+                          className="text-xs border border-gray-300 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-[#FF6B35]"
+                        >
+                          {statusOptions.map(opt => (
+                            <option key={opt} value={opt}>{opt}</option>
+                          ))}
+                        </select>
+                        <button
+                          onClick={() => handleStatusUpdate(orderId, editStatus)}
+                          className="p-1.5 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-all"
+                        >
+                          <FaSave size={10} />
+                        </button>
+                        <button
+                          onClick={() => {
+                            setUpdatingId(null);
+                            setEditStatus('');
+                          }}
+                          className="p-1.5 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-all"
+                        >
+                          <FaTimes size={10} />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        {getStatusBadge(order.status)}
+                        <button
+                          onClick={() => {
+                            setUpdatingId(orderId);
+                            setEditStatus(order.status || 'On the way');
+                          }}
+                          className="p-1.5 text-gray-400 hover:text-[#FF6B35] hover:bg-orange-50 rounded-lg transition-all"
+                          title="Update Status"
+                        >
+                          <FaEdit size={10} />
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   <div className="md:col-span-1 text-left md:text-right">
@@ -383,11 +442,9 @@ const ViewAllOrders = () => {
         )}
       </div>
 
-      {/* Modal - Fixed positioning with cancel button */}
       <AnimatePresence>
         {showDetails && selectedOrder && (
           <>
-            {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 0.5 }}
@@ -396,7 +453,6 @@ const ViewAllOrders = () => {
               className="fixed inset-0 bg-black z-50 cursor-pointer"
             />
             
-            {/* Modal Container - Centered */}
             <div className="fixed inset-0 z-50 mt-14 overflow-y-auto flex items-center justify-center p-4">
               <motion.div
                 initial={{ opacity: 0, scale: 0.9, y: 20 }}
@@ -405,7 +461,6 @@ const ViewAllOrders = () => {
                 transition={{ type: "spring", damping: 25 }}
                 className="bg-white rounded-3xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden relative mx-auto my-auto"
               >
-                {/* Close Button - Top Right */}
                 <button
                   onClick={closeModal}
                   className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/90 hover:bg-white text-gray-600 hover:text-gray-900 flex items-center justify-center text-xl shadow-lg transition-all"
@@ -413,7 +468,6 @@ const ViewAllOrders = () => {
                   <FaTimes />
                 </button>
 
-                {/* Header with gradient */}
                 <div className="bg-gradient-to-r from-[#FF6B35] to-orange-500 p-6 pr-16">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
@@ -422,143 +476,80 @@ const ViewAllOrders = () => {
                     <div>
                       <h2 className="text-xl font-black text-white">Order Details</h2>
                       <p className="text-white/80 text-sm">
-                        {selectedOrder.email || 'No email'}
+                        #{getOrderId(selectedOrder._id)?.slice(-8).toUpperCase()}
                       </p>
                     </div>
                   </div>
                 </div>
 
-                {/* Order Status Badge */}
                 <div className="px-6 py-3 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-bold text-gray-400 uppercase">Status:</span>
-                    <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold flex items-center gap-1">
-                      <FaCheckCircle size={10} /> {selectedOrder.status || 'Pending'}
-                    </span>
+                    {getStatusBadge(selectedOrder.status)}
                   </div>
                   <div className="flex items-center gap-2 text-xs text-gray-400">
                     <FaClock size={10} />
-                    <span>{selectedOrder.createdAt ? new Date(selectedOrder.createdAt).toLocaleString() : 'N/A'}</span>
+                    <span>{formatDate(selectedOrder.createdAt)}</span>
                   </div>
                 </div>
 
-                {/* Customer Info */}
                 <div className="p-6 border-b border-gray-100">
-                  <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-                    <FaUser size={12} /> Customer Information
+                  <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-2">
+                    <FaUser size={12} /> Customer Email
                   </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="flex items-center gap-2 text-sm">
-                      <FaUser className="text-gray-400" size={14} />
-                      <span className="font-medium text-gray-800">{selectedOrder.customerName || selectedOrder.email || 'N/A'}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <FaPhone className="text-gray-400" size={14} />
-                      <span className="text-gray-600">{selectedOrder.phone || 'N/A'}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm col-span-2">
-                      <FaMapMarkerAlt className="text-gray-400" size={14} />
-                      <span className="text-gray-600">{selectedOrder.address || 'No address provided'}</span>
-                    </div>
-                    {selectedOrder.deliveryNote && (
-                      <div className="flex items-center gap-2 text-sm col-span-2">
-                        <span className="text-gray-400">📝</span>
-                        <span className="text-gray-500 text-xs italic">"{selectedOrder.deliveryNote}"</span>
-                      </div>
-                    )}
-                  </div>
+                  <p className="text-sm font-medium text-gray-800">{selectedOrder.email || 'No email provided'}</p>
                 </div>
 
-                {/* Items */}
                 <div className="p-6 border-b border-gray-100 max-h-60 overflow-y-auto">
                   <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
                     <FaShoppingBag size={12} /> Items Ordered ({selectedOrder.items?.length || 0})
                   </h3>
                   <div className="space-y-2">
-                    {selectedOrder.items?.map((item, index) => {
-                      const itemId = getItemId(item);
-                      return (
-                        <motion.div
-                          key={itemId || index}
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: index * 0.05 }}
-                          className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-all group"
-                        >
-                          <div className="w-14 h-14 rounded-lg overflow-hidden flex-shrink-0 bg-white border border-gray-200">
-                            <img 
-                              src={item.image} 
-                              alt={item.name} 
-                              onError={handleImageError}
-                              className="w-full h-full object-cover" 
-                            />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-bold text-gray-900">{item.name}</p>
-                            <p className="text-xs text-gray-400">
-                              Qty: {item.quantity || 0} × ${item.price || 0}
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <p className="text-sm font-black text-[#FF6B35]">
-                              ${((item.price || 0) * (item.quantity || 0)).toFixed(2)}
-                            </p>
-                            <button 
-                              onClick={() => handleDeleteItem(selectedOrder, item)}
-                              className="text-gray-300 hover:text-rose-500 transition-all p-1 hover:bg-rose-50 rounded-lg"
-                              title="Remove item"
-                            >
-                              <FaTimes size={12} />
-                            </button>
-                          </div>
-                        </motion.div>
-                      );
-                    })}
+                    {selectedOrder.items?.map((item, index) => (
+                      <motion.div
+                        key={index}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: index * 0.05 }}
+                        className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-all"
+                      >
+                        <div className="w-14 h-14 rounded-lg overflow-hidden flex-shrink-0 bg-white border border-gray-200">
+                          <img 
+                            src={item.image} 
+                            alt={item.name} 
+                            onError={handleImageError}
+                            className="w-full h-full object-cover" 
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-bold text-gray-900">{item.name}</p>
+                          <p className="text-xs text-gray-400">
+                            Qty: {item.quantity || 0} × ${item.price || 0}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <p className="text-sm font-black text-[#FF6B35]">
+                            ${((item.price || 0) * (item.quantity || 0)).toFixed(2)}
+                          </p>
+                        </div>
+                      </motion.div>
+                    ))}
                   </div>
                 </div>
 
-                {/* Total */}
                 <div className="p-6 bg-gradient-to-r from-orange-50 to-amber-50">
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">Subtotal</span>
-                      <span className="font-bold text-gray-700">${calculateTotal(selectedOrder.items).toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-500 flex items-center gap-1">
-                        <FaTruck size={12} /> Delivery Fee
-                      </span>
-                      <span className="font-bold text-gray-700">$2.00</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-500 flex items-center gap-1">
-                        <FaMoneyBillWave size={12} /> Payment Method
-                      </span>
-                      <span className="font-bold text-gray-700 capitalize">{selectedOrder.paymentMethod || 'Cash'}</span>
-                    </div>
-                    <div className="flex justify-between text-xl font-black text-[#FF6B35] pt-2 border-t border-orange-200">
-                      <span>Total Amount</span>
-                      <span>${(calculateTotal(selectedOrder.items) + 2).toFixed(2)}</span>
-                    </div>
+                  <div className="flex justify-between text-xl font-black text-[#FF6B35]">
+                    <span>Total Amount</span>
+                    <span>${(calculateTotal(selectedOrder.items) + (selectedOrder.deliveryFee || 2)).toFixed(2)}</span>
                   </div>
                 </div>
 
-                {/* Actions - with Cancel button */}
-                <div className="p-6 bg-gray-50 flex flex-col sm:flex-row gap-3">
+                <div className="p-4 bg-gray-50 flex justify-end">
                   <button
                     onClick={closeModal}
-                    className="flex-1 py-2.5 rounded-xl bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold text-sm transition-all"
+                    className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold text-sm transition-all"
                   >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={() => {
-                      closeModal();
-                      handleDeleteOrder(selectedOrder);
-                    }}
-                    className="flex-1 py-2.5 rounded-xl bg-rose-500 text-white font-bold text-sm hover:bg-rose-600 transition-all flex items-center justify-center gap-2"
-                  >
-                    <FaTrash size={14} /> Delete Order
+                    Close
                   </button>
                 </div>
               </motion.div>

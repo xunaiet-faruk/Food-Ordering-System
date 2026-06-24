@@ -36,7 +36,6 @@ const ManageFood = () => {
     fetchFoodItems();
   }, []);
 
-  // Helper function to get the ID properly
   const getFoodId = (item) => {
     if (!item) return null;
     if (typeof item._id === 'string') return item._id;
@@ -162,7 +161,7 @@ const ManageFood = () => {
       const response = await axiosPublic.put(`/foods/${itemId}`, updatedData);
 
       if (response.data.success || response.status === 200) {
-        // Update the local state
+
         const updatedItems = foodItems.map(item => {
           const currentId = getFoodId(item);
           if (currentId === itemId) {
@@ -275,7 +274,7 @@ const ManageFood = () => {
   return (
     <div className="w-full min-h-full px-4 max-w-7xl mx-auto mb-10">
       
-      {/* ===== হেডার ===== */}
+    
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-gray-100">
         <div>
           <h1 className="text-xl sm:text-2xl font-black text-gray-900 flex items-center gap-3">
@@ -295,7 +294,7 @@ const ManageFood = () => {
         </button>
       </div>
 
-      {/* ===== সার্চ ও ফিল্টার ===== */}
+     
       <div className="mt-6 flex flex-col lg:flex-row gap-4 justify-between items-stretch lg:items-center">
         <div className="relative w-full lg:max-w-md">
           <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
@@ -325,7 +324,6 @@ const ManageFood = () => {
         </div>
       </div>
 
-      {/* ===== ফুড গ্রিড ===== */}
       <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
         {filteredItems.map((item) => {
           const itemId = getFoodId(item);
@@ -395,14 +393,14 @@ const ManageFood = () => {
         </div>
       )}
 
-      {/* ===== ADD NEW FOOD MODAL ===== */}
+     
       <AddFoodModal 
         isOpen={isAddModalOpen} 
         onClose={() => setIsAddModalOpen(false)} 
         onSuccess={handleAddSuccess}
       />
 
-      {/* ===== EDIT MODAL ===== */}
+    
       <AnimatePresence>
         {isEditModalOpen && selectedItem && (
           <>
@@ -422,7 +420,7 @@ const ManageFood = () => {
                 transition={{ type: "spring", damping: 25 }}
                 className="bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col max-h-[75vh] mx-auto overflow-hidden"
               >
-                {/* Modal Header */}
+      
                 <div className="flex items-center justify-between p-4 border-b rounded-t-xl  border-gray-100 shrink-0 bg-[#FF6B35]">
                   <h2 className="text-base font-black text-white flex items-center gap-2">
                     <FaEdit className="text-white" size={15} /> Edit Food Item
@@ -435,7 +433,7 @@ const ManageFood = () => {
                   </button>
                 </div>
 
-                {/* Form Container */}
+            
                 <form onSubmit={handleEditSubmit} className="flex-1 overflow-y-auto p-4 space-y-4 text-left max-h-[65vh] scrollbar-thin scrollbar-thumb-gray-200">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
@@ -535,7 +533,7 @@ const ManageFood = () => {
                   </div>
                 </form>
 
-                {/* Modal Footer Actions */}
+            
                 <div className="p-4 border-t border-gray-100 bg-gray-50 shrink-0 flex gap-2">
                   <button
                     type="button"
@@ -565,7 +563,7 @@ const ManageFood = () => {
         )}
       </AnimatePresence>
 
-      {/* ===== DELETE MODAL ===== */}
+ 
       <AnimatePresence>
         {isDeleteModalOpen && selectedItem && (
           <>

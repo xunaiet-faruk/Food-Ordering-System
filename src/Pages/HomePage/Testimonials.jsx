@@ -29,14 +29,12 @@ const Testimonials = () => {
     },
   ];
 
-  // ইনফিনিটি লুপ বা চিরকাল স্লাইডিং ধরে রাখার জন্য ডেটা ডুপ্লিকেট করা হয়েছে
   const duplicatedReviews = [...reviews, ...reviews, ...reviews];
 
   return (
-    <section className="py-24 bg-white px-4 sm:px-6 lg:px-8 overflow-hidden relative">
+    <section className="py-24 px-4 sm:px-6 lg:px-8 overflow-hidden relative">
       <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
         
-        {/* --- বাম পাশ: সেন্ট্রাল হেডিং (ব্ল্যাক + গ্রাডিয়েন্ট) --- */}
         <div className="text-left max-w-xl">
           <h2 className="text-4xl sm:text-5xl font-black tracking-tight text-gray-900 leading-[1.15]">
             What Our <br />
@@ -50,23 +48,20 @@ const Testimonials = () => {
           </p>
         </div>
 
-        {/* --- ডান পাশ: ইনফিনিটি ভার্টিক্যাল স্লাইডার কন্টেইনার --- */}
         <div className="relative h-[480px] w-full overflow-hidden rounded-[2.5rem]  p-6">
           
-          {/* উপর ও নিচের ফেড ইফেক্ট (যাতে স্লাইডারটি কেটে না গিয়ে মসৃণভাবে মিলিয়ে যায়) */}
           <div className="absolute top-0 left-0 right-0 h-16 bg-gradient-to-b from-white to-transparent z-10 pointer-events-none" />
           <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-white to-transparent z-10 pointer-events-none" />
 
-          {/* ইনফিনিটি মোশন অ্যানিমেশন ট্র্যাক */}
           <motion.div
             className="space-y-6 flex flex-col"
             animate={{
-              y: [0, -960], // অনবরত অক্ষ বরাবর উপরের দিকে স্লাইড হবে
+              y: [0, -960], 
             }}
             transition={{
-              duration: 22, // স্লাইডিং স্পিড (কম্পোর্ট ফিল দেওয়ার জন্য স্লো রাখা হয়েছে)
+              duration: 22, 
               ease: "linear",
-              repeat: Infinity, // আজীবন আনলিমিটেড চলতে থাকবে
+              repeat: Infinity, 
             }}
           >
             {duplicatedReviews.map((user, index) => (
@@ -74,12 +69,9 @@ const Testimonials = () => {
                 key={index}
                 className="bg-white border border-gray-100/80 rounded-[2rem] p-6 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between relative group"
               >
-                {/* কোট আইকন */}
                 <div className="absolute top-6 right-6 text-orange-100 pointer-events-none">
                   <FaQuoteLeft size={22} />
                 </div>
-
-                {/* কাস্টমার কমেন্ট এবং রেটিং */}
                 <div>
                   <div className="flex items-center gap-1 text-amber-500 mb-3">
                     {[...Array(5)].map((_, i) => (
@@ -92,7 +84,6 @@ const Testimonials = () => {
                   </p>
                 </div>
 
-                {/* কাস্টমার প্রোফাইল */}
                 <div className="flex items-center gap-3 mt-5 pt-4 border-t border-gray-50">
                   <img
                     src={user.image}

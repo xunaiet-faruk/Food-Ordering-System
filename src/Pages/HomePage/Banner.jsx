@@ -4,7 +4,6 @@ import { Link } from "react-router-dom";
 import { FaArrowRight, FaPizzaSlice, FaHamburger, FaBirthdayCake, FaStar, FaTruck, FaClock } from "react-icons/fa";
 
 const Banner = () => {
-  // ✅ ১০০% ওয়ার্কিং ইমেজ URL
   const foodImages = [
     "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=600&h=600&fit=crop&auto=format",
     "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=600&h=600&fit=crop&auto=format",
@@ -22,7 +21,6 @@ const Banner = () => {
     return () => clearInterval(interval);
   }, [foodImages.length, isHovering]);
 
-  // টেক্সট অ্যানিমেশন
   const textContainer = {
     hidden: { opacity: 0 },
     visible: {
@@ -36,7 +34,6 @@ const Banner = () => {
     visible: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 70 } }
   };
 
-  // হালকা স্লাইড অ্যানিমেশন
   const imageAnimation = {
     initial: { opacity: 0, x: 50, scale: 0.8 },
     animate: { 
@@ -53,10 +50,8 @@ const Banner = () => {
     }
   };
 
-  // ✅ সব ইমেজের জন্য একই রাউন্ডেড স্টাইল
   const sameRoundedStyle = "rounded-[40%_60%_40%_60%_/_60%_40%_60%_40%]";
 
-  // ফ্লোটিং এলিমেন্ট অ্যানিমেশন
   const floatAnimation = {
     y: [0, -15, 0],
     transition: { duration: 3, repeat: Infinity, ease: "easeInOut" }
@@ -68,14 +63,12 @@ const Banner = () => {
   };
 
   return (
-    <div className="relative container mx-auto flex items-center overflow-hidden px-4 sm:px-6 lg:px-8 py-12">
+    <div className="relative container mx-auto flex items-center overflow-hidden px-4 sm:px-6 lg:px-8 pt-26 pb-12 ">
       
-      {/* ডেকোরেটিভ শেপ */}
       <div className="absolute right-0 top-0 bottom-0 w-full md:w-1/2 bg-gradient-to-l from-orange-200/30 to-transparent pointer-events-none rounded-l-[100px] hidden md:block" />
       <div className="absolute right-0 top-0 w-96 h-96 bg-orange-300/20 rounded-full filter blur-3xl -mr-48 -mt-48 hidden lg:block" />
       <div className="absolute left-0 bottom-0 w-96 h-96 bg-pink-300/20 rounded-full filter blur-3xl -ml-48 -mb-48 hidden lg:block" />
-
-      {/* ফ্লোটিং আইকন */}
+      
       <motion.div 
         animate={floatAnimation}
         className="absolute top-20 left-10 text-orange-400/40 hidden xl:block"
@@ -94,8 +87,6 @@ const Banner = () => {
       >
         <FaBirthdayCake size={35} />
       </motion.div>
-
-      {/* রেটিং ব্যাজ */}
       <motion.div
         initial={{ opacity: 0, x: 50 }}
         animate={{ opacity: 1, x: 0 }}
@@ -115,7 +106,6 @@ const Banner = () => {
 
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 items-center w-full relative z-10">
         
-        {/* --- বামপাশ: কন্টেন্ট --- */}
         <motion.div 
           initial="hidden"
           animate="visible"
@@ -148,7 +138,6 @@ const Banner = () => {
             to your door, hot and fresh in just <span className="text-orange-500 font-bold">30 minutes</span>.
           </motion.p>
 
-          {/* স্ট্যাটাস বার */}
           <motion.div 
             variants={textItem}
             className="flex flex-wrap justify-center md:justify-start gap-6 pt-2"
@@ -192,14 +181,12 @@ const Banner = () => {
           </motion.div>
         </motion.div>
 
-        {/* --- ডানপাশ: পুলস অ্যানিমেশন সহ ইমেজ --- */}
         <div 
           className="relative flex justify-center items-center h-[350px] sm:h-[450px] lg:h-[500px]"
           onMouseEnter={() => setIsHovering(true)}
           onMouseLeave={() => setIsHovering(false)}
         >
           
-          {/* 🎯 পুলসিং রিং ইফেক্ট */}
           <motion.div
             animate={{ 
               scale: [1, 1.15, 1],
@@ -227,10 +214,7 @@ const Banner = () => {
             className="absolute w-80 h-80 sm:w-96 sm:h-96 lg:w-[460px] lg:h-[460px] rounded-full border-4 border-orange-200/20"
           />
 
-          {/* ব্যাকগ্রাউন্ড ব্লার */}
           <div className="absolute w-56 h-56 sm:w-72 sm:h-72 lg:w-[380px] lg:h-[380px] bg-gradient-to-tr from-orange-200/30 to-pink-200/30 rounded-full mix-blend-multiply filter blur-3xl animate-pulse" />
-
-          {/* ✅ মেইন ইমেজ - সব ইমেজের জন্য একই রাউন্ডেড স্টাইল + পুলস */}
           <motion.div
             animate={{
               scale: [1, 1.02, 1],
@@ -256,8 +240,6 @@ const Banner = () => {
               />
             </AnimatePresence>
           </motion.div>
-
-          {/* ইন্ডিকেটর */}
           <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2 z-20">
             {foodImages.map((_, idx) => (
               <button
@@ -272,7 +254,6 @@ const Banner = () => {
             ))}
           </div>
 
-          {/* ট্যাগ */}
           <motion.div
             initial={{ opacity: 0, scale: 0 }}
             animate={{ opacity: 1, scale: 1 }}

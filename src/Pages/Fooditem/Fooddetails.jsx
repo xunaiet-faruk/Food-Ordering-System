@@ -17,7 +17,6 @@ const FoodDetails = () => {
   const [loading, setLoading] = useState(true);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
 
-  // 3D Card Effect Variables
   const x = useMotionValue(200);
   const y = useMotionValue(200);
   const rotateX = useTransform(y, [0, 400], [10, -10]);
@@ -34,7 +33,6 @@ const FoodDetails = () => {
     y.set(200);
   }
 
-  // ✅ API থেকে ফুড ডিটেইলস লোড
   useEffect(() => {
     axiosPublic.get('/foods')
       .then((response) => {
@@ -45,7 +43,6 @@ const FoodDetails = () => {
           setFood(foundFood);
           setActiveImage(foundFood.image);
         } else {
-          // Fallback
           const defaultFood = {
             _id: id,
             name: "Premium Chef's Special",
@@ -70,7 +67,7 @@ const FoodDetails = () => {
       });
   }, [id]);
 
-  // ✅ কার্টে যোগ করুন (DB তে সেভ)
+
   const addToCart = async () => {
     if (!user?.email) {
       alert("Please login first to add items to cart!");
@@ -81,11 +78,10 @@ const FoodDetails = () => {
     setIsAddingToCart(true);
 
     try {
-      // প্রথমে ইউজারের কার্ট চেক করুন
+    
       const cartResponse = await axiosPublic.get(`/cart/${user.email}`);
       let existingCart = cartResponse.data?.data || { email: user.email, items: [] };
       
-      // নতুন আইটেম যোগ করুন
       const existingItemIndex = existingCart.items.findIndex(item => item._id === food._id);
       
       if (existingItemIndex > -1) {
@@ -101,7 +97,7 @@ const FoodDetails = () => {
         });
       }
 
-      // কার্ট আপডেট করুন
+     
       await axiosPublic.post('/cart', {
         email: user.email,
         items: existingCart.items
@@ -153,7 +149,7 @@ const FoodDetails = () => {
 
   return (
     <div className="bg-white min-h-screen pb-24 text-left overflow-x-hidden">
-      {/* Top Navigation */}
+     
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
         <motion.button
           whileHover={{ x: -4 }}
@@ -164,11 +160,11 @@ const FoodDetails = () => {
         </motion.button>
       </div>
 
-      {/* Main Content */}
+
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-16 items-start">
           
-          {/* Left Column: Image */}
+    
           <div className="lg:col-span-6 space-y-4 sm:space-y-6">
             <motion.div
               style={{ rotateX, rotateY, transformStyle: "preserve-3d" }}
@@ -197,7 +193,6 @@ const FoodDetails = () => {
               </div>
             </motion.div>
 
-            {/* Thumbnail Gallery */}
             {imageGallery.length > 1 && (
               <div className="grid grid-cols-3 gap-2 sm:gap-4 px-1 sm:px-2">
                 {imageGallery.map((imgUrl, index) => (

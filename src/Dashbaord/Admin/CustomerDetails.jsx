@@ -152,11 +152,9 @@ const CustomerDetails = () => {
     );
   }
 
-  // কালার হেল্পার
   const getStatusColor = (status) => status === "Active" ? "bg-green-50 text-green-700 border-green-200" : "bg-gray-50 text-gray-700 border-gray-200";
   const getRoleColor = (role) => role === "Admin" ? "bg-purple-50 text-purple-700 border-purple-200" : "bg-blue-50 text-blue-700 border-blue-200";
 
-  // লোডিং স্ক্রিন
   if (loading) {
     return (
       <div className="w-full min-h-[400px] flex items-center justify-center">
@@ -172,7 +170,7 @@ const CustomerDetails = () => {
 
   return (
     <div className="w-full min-h-full px-4 max-w-7xl mx-auto mb-10">
-      {/* হেডার */}
+     
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-gray-100">
         <div>
           <h1 className="text-xl sm:text-2xl font-black text-gray-900 flex items-center gap-3">
@@ -188,7 +186,7 @@ const CustomerDetails = () => {
 
   
 
-      {/* কাস্টমার লিস্ট */}
+      
       <div className="mt-6 space-y-3">
         {customersData.length === 0 ? (
           <div className="text-center py-16 bg-white rounded-2xl border border-dashed border-gray-200">
@@ -233,7 +231,7 @@ const CustomerDetails = () => {
                 </div>
               </div>
 
-              {/* অ্যাকশন বাটন */}
+         
               <div className="flex items-center justify-end gap-2 border-t lg:border-t-0 pt-3 lg:pt-0">
                 <button onClick={() => { setSelectedCustomer(customer); setShowDetails(true); }} className="cursor-pointer  p-2 rounded-xl bg-gray-50 border text-gray-500 hover:text-[#FF6B35] hover:bg-orange-50 transition-all">
                   <FaEye size={12} />
@@ -250,7 +248,7 @@ const CustomerDetails = () => {
         )}
       </div>
 
-      {/* ডিটেইলস মোডাল */}
+    
       <AnimatePresence>
         {showDetails && selectedCustomer && (
           <>
